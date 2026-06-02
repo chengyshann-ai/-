@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>申根行程助手</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f8f9fa;--card:#fff;--text:#1a1a2e;--text2:#6c757d;--border:#e9ecef;--accent:#4361ee;--ahover:#3a56d4;--green:#2ec4b6;--red:#e71d36;--orange:#ff9f1c;--radius:10px;--shadow:0 2px 8px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 20% 80%,#e8ecfc 0%,transparent 50%),radial-gradient(circle at 80% 20%,#f0e6f6 0%,transparent 50%)}
+.app{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+.header{text-align:center;margin-bottom:28px}
+.header h1{font-size:30px;font-weight:800;letter-spacing:-.5px;background:linear-gradient(135deg,#4361ee,#7209b7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header p{color:var(--text2);font-size:14px;margin-top:4px;font-weight:400}
+
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:var(--text)}
+
+/* City Panel — multi-column layout */
+.city-panel-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.city-panel-inner{columns:4;column-gap:16px;max-height:480px;overflow-y:auto}
+@media(max-width:900px){.city-panel-inner{columns:3}}
+@media(max-width:600px){.city-panel-inner{columns:2}}
+
+.country-group{break-inside:avoid;margin-bottom:12px;padding:8px;border-radius:8px;background:#fafbfc;transition:background .15s}
+.country-group:hover{background:#f0f3ff}
+.country-label{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px;padding:2px 6px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.country-label:hover{text-decoration:underline}
+
+.city-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:pointer;font-size:12px;transition:all .12s;user-select:none;margin:1px 0}
+.city-row:hover{background:#e8ecfe}
+.city-row.selected{background:#4361ee;color:#fff;font-weight:600}
+.city-row .dot{width:7px;height:7px;border-radius:50%;background:#cbd5e1;flex-shrink:0;transition:all .15s}
+.city-row.selected .dot{background:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.4)}
+.city-row .flag{font-size:13px;flex-shrink:0}
+
+.form-row{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.form-row:last-child{margin-bottom:0}
+.form-group{flex:1;min-width:120px}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border:2px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--bg);transition:all .15s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(67,97,238,.1)}
+
+.btn{padding:9px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(67,97,238,.3)}
+.btn-primary:hover{background:var(--ahover);transform:translateY(-1px);box-shadow:0 4px 12px rgba(67,97,238,.4)}
+.btn-outline{background:#fff;border:2px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg);border-color:var(--accent)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-group{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+
+.sticky-bar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+
+.tabs{display:flex;gap:0;margin-bottom:18px;border-bottom:2px solid var(--border)}
+.tab-btn{padding:10px 22px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);transition:all .15s;position:relative}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:2px;background:var(--accent)}
+
+.itinerary-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid var(--border)}
+.itinerary-header h2{font-size:20px;font-weight:800}
+.itinerary-meta{font-size:12px;color:var(--text2);line-height:1.6}
+.day-block{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.day-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:linear-gradient(135deg,#f0f3ff,#fafbfc);border-bottom:1px solid var(--border)}
+.day-header h3{font-size:13px;font-weight:700;color:var(--accent)}
+.day-header .day-city{font-size:12px;color:var(--text2)}
+.day-content{padding:10px 16px;font-size:13px}
+.day-item{padding:4px 0;display:flex;gap:10px;align-items:flex-start}
+.day-item .time{color:var(--text2);white-space:nowrap;min-width:40px;font-size:11px;font-weight:600}
+.day-item .desc{flex:1;line-height:1.5}
+
+.std-table-wrap{overflow-x:auto}
+.std-table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px}
+.std-table th,.std-table td{border:1px solid #dee2e6;padding:7px 9px;vertical-align:top;line-height:1.4}
+.std-table th{background:linear-gradient(135deg,#f0f3ff,#e8ecfe);font-weight:700;font-size:10px;text-align:center;text-transform:uppercase;letter-spacing:.5px}
+.std-table td.day-num{text-align:center;width:36px;font-weight:700;color:var(--accent)}
+.std-table td.date-col{white-space:nowrap;width:100px;font-size:10px}
+.std-table td.city-col{white-space:nowrap;width:100px;font-weight:600}
+.std-table td.spots-col{min-width:160px}
+.std-table td.hotel-col{min-width:140px;font-size:10px}
+.std-table td.transport-col{min-width:130px;font-size:10px}
+
+.budget-summary{margin-top:16px;padding:16px;background:linear-gradient(135deg,#f0f3ff,#fafbfc);border-radius:var(--radius);font-size:11px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;border:1px solid var(--border)}
+.budget-item{text-align:center}
+.budget-item .amount{font-size:19px;font-weight:800;color:var(--accent)}
+.budget-item .label{font-size:10px;color:var(--text2);margin-top:2px;font-weight:500}
+
+.like-section{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.btn-like{background:#fff;border:2px solid var(--border);border-radius:24px;padding:7px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;font-weight:600}
+.btn-like:hover{border-color:var(--red);background:#fff5f5}
+.btn-like.liked{background:#fff0f0;border-color:var(--red);color:var(--red)}
+.like-count{font-size:12px;color:var(--text2)}
+.btn-refresh{background:#fff;border:2px solid var(--border);color:var(--text);padding:7px 16px;border-radius:24px;cursor:pointer;font-size:13px;transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:5px;font-weight:600}
+.btn-refresh:hover{background:var(--bg);border-color:var(--accent)}
+
+.popular-section{margin-top:20px}
+.popular-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;font-size:13px;transition:all .12s;background:#fff}
+.popular-item:hover{border-color:var(--accent);background:#f8faff;transform:translateX(3px)}
+.popular-item .pop-rank{font-size:18px;font-weight:800;min-width:26px}
+.popular-item .pop-rank.r1{color:#ff9f1c}.popular-item .pop-rank.r2{color:#adb5bd}.popular-item .pop-rank.r3{color:#cd9777}
+.popular-item .pop-route{flex:1}.popular-item .pop-likes{font-size:11px;color:var(--text2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+.hidden{display:none!important}
+
+.ai-loading{display:flex;align-items:center;justify-content:center;gap:12px;padding:60px;color:var(--text2);font-size:15px}
+.ai-loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-error{padding:20px;background:#fff5f5;border:2px solid var(--red);border-radius:var(--radius);color:var(--red);font-size:13px;margin:10px 0}
+
+.selected-count-badge{display:inline-flex;align-items:center;gap:4px;background:var(--accent);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+
+@media print{
+  body{background:#fff}.app{padding:0;max-width:100%}
+  .card{box-shadow:none;border:none;padding:10px 0}
+  #config-section,.sticky-bar,.tabs,.toast,.btn-group,.like-section,.popular-section{display:none!important}
+  .day-block{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="js-test" style="background:#fff5f5;color:#ff3b30;padding:4px 10px;font-size:11px;text-align:center;display:none">⚠ JS未加载</div>
+  <div class="header"><h1>申根行程助手</h1><p>29个申根国 · 100+城市 · 签证标准表格 · 一键Excel · 热门排行</p></div>
+
+  <div id="config-section">
+    <div class="card">
+      <div class="card-title">📍 选择目的地 — 点击地图上的国家或右侧城市（支持多选）</div>
+      <div class="city-panel-wrap">
+        <div class="card-title">📍 选择目的地 <span style="font-weight:400;font-size:11px;color:var(--text2)">— 点击国家名快速选首都，点击城市名多选</span></div>
+        <div class="city-panel-inner" id="city-panel"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">
+        <span class="selected-count-badge">📍 <b id="selected-count">0</b> 个城市已选</span>
+        <span id="selected-names" style="color:var(--text2);font-size:12px;margin-left:8px">未选择</span>
+        <button class="btn btn-outline btn-sm" onclick="selectAllCapitals()" style="margin-left:12px">🌍 快速全选首都</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ 行程参数</div>
+      <div class="form-row">
+        <div class="form-group"><label>旅行天数</label><select id="days-input"><option value="7">7天</option><option value="10" selected>10天</option><option value="12">12天</option><option value="14">14天</option><option value="18">18天</option><option value="21">21天</option><option value="30">30天</option></select></div>
+        <div class="form-group"><label>人均预算 CNY</label><input type="number" id="budget-input" value="25000" step="1000" min="5000"></div>
+        <div class="form-group"><label>预算等级</label><select id="level-input"><option value="budget">💰 经济型</option><option value="mid" selected>💎 舒适型</option><option value="luxury">👑 豪华型</option></select></div>
+        
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>出发城市</label><select id="departure-input"></select></div>
+        <div class="form-group"><label>出发日期</label><input type="date" id="start-date-input"></div>
+        <div class="form-group"><label>季节</label><select id="season-input"><option value="spring">🌸 春季</option><option value="summer" selected>☀️ 夏季</option><option value="autumn">🍂 秋季</option><option value="winter">❄️ 冬季</option></select></div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="generateItinerary()">✨ 生成行程单</button>
+        <button class="btn btn-outline" onclick="resetAll()">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="result-section" class="hidden">
+    <div class="sticky-bar">
+      <button class="btn btn-outline btn-sm" onclick="downloadExcel()">📊 下载Excel (.xlsx)</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadCSV()">📄 下载CSV</button>
+      <button class="btn btn-outline btn-sm" onclick="openDoubao()">🤖 豆包审阅</button>
+      <button class="btn btn-outline btn-sm" onclick="copyTable()">📋 复制表格</button>
+      <button class="btn btn-outline btn-sm" id="lang-btn" onclick="toggleLanguage()">English</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text-secondary)">|</span>
+      <button class="btn btn-outline btn-sm" onclick="backToConfig()">↩ 修改参数</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="itinerary" onclick="switchTab('itinerary',this)">📋 详细行程</button>
+      <button class="tab-btn" data-tab="table" onclick="switchTab('table',this)">📊 标准表格 (签证格式)</button>
+    </div>
+    <div id="tab-itinerary"></div>
+    <div id="tab-table" class="hidden"></div>
+
+    <div id="like-section" class="like-section hidden">
+      <button class="btn-like" id="like-btn" onclick="toggleLike()">❤️ <span id="like-text">点赞</span></button>
+      <span class="like-count" id="like-count"></span>
+      <button class="btn-refresh" onclick="regenerate()" style="margin-left:auto">🔀 换一换</button>
+    </div>
+    <div id="popular-section" class="popular-section hidden">
+      <div class="card-title" style="margin-bottom:8px">🔥 热门行程（点赞越多越靠前，点击加载）</div>
+      <div id="popular-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
