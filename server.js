@@ -1,31 +1,29 @@
 // 申根行程助手 — 后端 API 服务
-// 部署: Vercel / Cloudflare Workers / Node Express
 // 启动: QWEN_API_KEY=xxx node server.js
-// 模型: 阿里云百炼 Qwen-Plus (OpenAI Compatible API)
+// 部署: Vercel / Node Express
 
 const express = require('express');
 const cors = require('cors');
 const https = require('https');
 const crypto = require('crypto');
-
-// Load .env in development
-try { require('dotenv').config(); } catch(e) {}
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
 
+// ===== 静态文件 =====
+app.use(express.static(path.join(__dirname, '/')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ===== 配置 =====
 const QWEN_API_KEY = process.env.QWEN_API_KEY;
 const PORT = process.env.PORT || 8765;
 
-// Qwen OpenAI Compatible API config
-const QWEN_BASE = 'dashscope.aliyuncs.com';
-const QWEN_PATH = '/compatible-mode/v1/chat/completions';
-const QWEN_MODEL = 'qwen-plus';
-
-// ===== Rate Limiting =====
+// ===== 限流 =====
 const rateLimit = new Map();
-
 function checkRateLimit(ip) {
   const now = Date.now();
   const entry = rateLimit.get(ip);
@@ -38,14 +36,11 @@ function checkRateLimit(ip) {
   return true;
 }
 
-// ===== Request Cache =====
+// ===== 请求缓存 =====
 const cache = new Map();
-
 function getCacheKey(params) {
-  const str = JSON.stringify(params);
-  return crypto.createHash('md5').update(str).digest('hex');
+  return crypto.createHash('md5').update(JSON.stringify(params)).digest('hex');
 }
-
 function checkCache(key) {
   const entry = cache.get(key);
   if (!entry) return null;
@@ -55,7 +50,6 @@ function checkCache(key) {
   }
   return entry.result;
 }
-
 function setCache(key, result) {
   cache.set(key, { result, timestamp: Date.now() });
   if (cache.size > 100) {
@@ -66,31 +60,52 @@ function setCache(key, result) {
   }
 }
 
-// ===== Qwen API Call (OpenAI Compatible) =====
-function callQwen(prompt, callback) {
-  if (!QWEN_API_KEY) {
-    callback(null, null);
-    return;
+// ===== 构建 prompt（前端传入 localItinerary 节省 Token）=====
+function buildPrompt({ cities, days, level, departure, startDate, localItinerary }) {
+  const levelMap = {
+    budget: '经济型(住宿350元/晚)',
+    mid: '舒适型(住宿750元/晚)',
+    luxury: '豪华型(住宿1800元/晚)'
+  };
+  let prompt = '你是欧洲申根签证行程规划专家。必须返回合法JSON。不要Markdown。\n\n';
+  prompt += '参数:\n';
+  prompt += '- 天数: ' + days + '\n';
+  prompt += '- 预算: ' + (levelMap[level] || level) + '\n';
+  prompt += '- 出发: ' + departure + ' → ' + (cities || []).join(' → ') + '\n';
+  prompt += '- 日期: ' + startDate + '\n';
+  if (localItinerary && localItinerary.days) {
+    prompt += '\n基础行程:\n' + JSON.stringify(localItinerary, null, 2) + '\n';
+    prompt += '\n请补充 hotel_area、transportation、activities。';
+  } else {
+    prompt += '\n请从零规划完整的行程JSON。';
   }
+  prompt += '\n\n格式: {"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}';
+  prompt += '\n只返回JSON。';
+  return prompt;
+}
+
+// ===== Qwen API 调用 =====
+function callQwen(prompt, callback) {
+  if (!QWEN_API_KEY) return callback(null, null);
 
   const body = JSON.stringify({
-    model: QWEN_MODEL,
+    model: 'qwen-plus',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
     max_tokens: 4000
   });
 
   const req = https.request({
-    hostname: QWEN_BASE,
+    hostname: 'dashscope.aliyuncs.com',
     port: 443,
-    path: QWEN_PATH,
+    path: '/compatible-mode/v1/chat/completions',
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + QWEN_API_KEY
     },
     timeout: 30000
-  }, (res) => {
+  }, res => {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
@@ -98,145 +113,65 @@ function callQwen(prompt, callback) {
         const json = JSON.parse(data);
         if (res.statusCode !== 200) {
           console.error('Qwen API error:', res.statusCode, json.error?.message || json.message);
-          callback(new Error(json.error?.message || 'API error ' + res.statusCode), null);
-          return;
+          return callback(new Error(json.error?.message || 'API error'), null);
         }
         const content = json.choices?.[0]?.message?.content;
         callback(null, content);
       } catch(e) {
+        console.error('Parse Qwen response error:', e);
         callback(e, null);
       }
     });
   });
 
-  req.on('error', (e) => callback(e, null));
-  req.on('timeout', () => { req.destroy(); callback(new Error('API timeout'), null); });
+  req.on('error', e => callback(e, null));
   req.write(body);
   req.end();
 }
 
-// ===== Build AI Prompt =====
-function buildPrompt(itinerary, days, level, departure, startDate) {
-  const levelMap = {
-    budget: '经济型(住宿350元/晚, 餐饮150元/天)',
-    mid: '舒适型(住宿750元/晚, 餐饮300元/天)',
-    luxury: '豪华型(住宿1800元/晚, 餐饮600元/天)'
-  };
-
-  return `你是欧洲申根签证行程规划专家。
-
-必须返回合法JSON。不要Markdown。不要解释。不要代码块。
-
-参数:
-- 旅行天数: ${days}天
-- 预算: ${levelMap[level] || level}
-- 出发城市: ${departure} (中国)
-- 出发日期: ${startDate}
-
-基础行程:
-${JSON.stringify(itinerary, null, 2)}
-
-请为每天补充:
-1. hotel_area: 靠近景点的区域（真实地名，如"7th arrondissement"或"米兰中央车站附近"）
-2. activities: 2-4个具体景点（中英双语，如"Eiffel Tower 埃菲尔铁塔"）
-3. transport: 实际交通方式（注意威尼斯是水城，用Vaporetto不写Metro）
-4. accommodation_summary: N晚住宿说明（如"2 nights in Milan (6.15-6.17)"）
-
-返回格式:
-{
-  "route": "城市1 → 城市2 → ...",
-  "days": [
-    {
-      "day": 1,
-      "date": "YYYY-MM-DD",
-      "city": "城市名, 国家",
-      "touringSpots": ["景点1", "景点2"],
-      "accommodation": "住宿详情",
-      "transportation": "交通详情"
-    }
-  ]
-}
-
-只返回JSON。`;
-}
-
-// ===== API Endpoint =====
+// ===== API 路由 =====
 app.post('/api/generate-itinerary', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-  const { cities, days, level, departure, startDate, localItinerary } = req.body;
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  const { cities, days } = req.body;
+  if (!cities || !days) return res.status(400).json({ error: '缺少城市或天数', fallback: true });
 
-  if (!cities || !days) {
-    return res.status(400).json({ error: 'Missing required fields: cities, days' });
-  }
+  if (!checkRateLimit(ip)) return res.status(429).json({ error: '今日额度已用完(5次/天)', fallback: true });
 
-  // Rate limit check
-  if (!checkRateLimit(ip)) {
-    return res.status(429).json({
-      error: '今日免费额度已用完（5次/天），请明天再试或使用本地规则引擎',
-      fallback: true
-    });
-  }
-
-  // Check cache
-  const cacheKey = getCacheKey({ cities, days, level, departure });
+  const cacheKey = getCacheKey({ cities, days, level: req.body.level, departure: req.body.departure });
   const cached = checkCache(cacheKey);
   if (cached) {
-    console.log(`[${new Date().toISOString()}] Cache hit for ${ip}`);
+    console.log('Cache hit');
     return res.json({ ...cached, source: 'cache' });
   }
 
-  // Build prompt
-  const prompt = buildPrompt(localItinerary || { days: [] }, days, level, departure, startDate);
+  const prompt = buildPrompt(req.body);
 
-  // Call Qwen
-  console.log(`[${new Date().toISOString()}] Calling Qwen for ${ip}...`);
-  callQwen(prompt, (err, content) => {
-    if (err || !content) {
-      console.log(`[${new Date().toISOString()}] Qwen failed, returning fallback signal`);
-      return res.json({
-        error: err?.message || 'AI service unavailable',
-        fallback: true
-      });
-    }
+  console.log('Calling Qwen...');
+  callQwen(prompt, (err, result) => {
+    if (err || !result) return res.json({ error: err?.message || 'AI unavailable', fallback: true });
 
-    // Parse response
-    let json = content.trim();
+    let json = result.trim();
     if (json.startsWith('```')) json = json.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
 
     try {
-      const result = JSON.parse(json);
-      setCache(cacheKey, result);
-      console.log(`[${new Date().toISOString()}] Qwen success for ${ip}`);
-      res.json({ ...result, source: 'qwen' });
+      const parsed = JSON.parse(json);
+      setCache(cacheKey, parsed);
+      res.json({ ...parsed, source: 'qwen' });
     } catch(e) {
-      console.error('Failed to parse Qwen response:', e.message);
-      res.json({
-        error: 'AI returned invalid format, using local generation',
-        fallback: true
-      });
+      res.json({ error: 'AI返回非JSON', fallback: true });
     }
   });
 });
 
-// Health check
+// ===== 健康检查 =====
 app.get('/api/status', (req, res) => {
-  res.json({
-    status: 'ok',
-    qwen_configured: !!QWEN_API_KEY,
-    model: QWEN_MODEL,
-    cache_size: cache.size
-  });
+  res.json({ status: 'ok', qwen: !!QWEN_API_KEY, cache: cache.size });
 });
 
-// ===== Start =====
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`🚀 申根行程 API 已启动 → http://localhost:${PORT}`);
-    console.log(`   千问API: ${QWEN_API_KEY ? '✅ 已配置' : '⚠ 未配置（将使用本地规则）'}`);
-    console.log(`   模型: ${QWEN_MODEL}`);
-    console.log(`   POST /api/generate-itinerary`);
-    console.log(`   GET  /api/status`);
-  });
-}
+// ===== 启动 =====
+app.listen(PORT, () => {
+  console.log(`🚀 http://localhost:${PORT}`);
+  console.log(`千问API: ${QWEN_API_KEY ? '✅' : '⚠ 未配置'}`);
+});
 
 module.exports = app;
