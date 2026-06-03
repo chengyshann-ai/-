@@ -179,12 +179,12 @@ function getHotelAddr(city, countryCode) {
 function getIntercityTransport(from, to) {
   var d = Math.abs(from.lat - to.lat) + Math.abs(from.lng - to.lng);
   if (d < 8) {
-    return 'Train: ______ (请填写车次)\n' + from.en + ' → ' + to.en + '\n市内: Walking / Metro';
+    return '🚂 Train: ' + from.en + ' → ' + to.en + '\n市内: Walking / Metro';
   }
   if (d < 15) {
-    return 'Train: ______ (请填写车次)\n' + from.en + ' Hbf → ' + to.en + ' Hbf\n市内: Walking / Metro';
+    return '🚂 Train: ' + from.en + ' Hbf → ' + to.en + ' Hbf\n市内: Walking / Metro';
   }
-  return '✈ Flight: ______ (请填写航班号)\n' + from.en + ' → ' + to.en + '\n市内: Walking / Metro / Taxi';
+  return '✈ 航班: ' + from.en + ' → ' + to.en + '\n市内: Walking / Metro / Taxi';
 }
 
 // ==================== STATE ====================
@@ -339,23 +339,28 @@ function generateItinerary() {
       };
 
       if (i === 0 && isFirstDay) {
-        // Arrival day: fewer spots since travel takes time
+        // Arrival day: account for immigration + baggage + transit
         touringSpots = takeSpots(1, true);
-        var arr = departure.split('').reduce(function(s,c){return s+c.charCodeAt(0);},0);
-        transport = '✈ Flight: ______ (请填写航班号)\n' + departure + ' → ' + city.en + '\n机场至酒店: ______ (请填写交通方式)';
+        if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
+          touringSpots = '到达日: 入境排队+取行李约60分钟，机场至市区约40分钟\n下午: 酒店周边漫步适应时差';
+        }
+        transport = '✈ 国际航班: ' + departure + ' → ' + city.en + '\n⚠ 入境+取行李约60分钟 · 机场至市区约40分钟\n下午仅安排酒店周边轻松适应';
       } else if (isFirstDay && i > 0) {
-        // Travel day: only 1 light spot, no museums
+        // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
-        transport = getIntercityTransport(cities[i-1], city);
+        if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
+          touringSpots = '换乘日: 上午退房+火车/航班\n下午: 抵达入住，周边轻松漫步';
+        }
+        transport = '⚠ 换乘日: 退房→' + getIntercityTransport(cities[i-1], city) + '→入住新酒店';
       } else if (i === cities.length - 1 && isLastDay) {
         // Departure day: just 1-2 spots
         touringSpots = takeSpots(1);
         transport = (function() {
         var hubs = ['Paris','Frankfurt','Amsterdam','Rome','Milan','Madrid','Barcelona','Munich','Zurich','Vienna','Lisbon','Athens','Brussels','Copenhagen','Stockholm','Helsinki','Oslo','Warsaw','Budapest','Prague','Berlin'];
         if (hubs.indexOf(city.en) >= 0) {
-          return '✈ Flight: ______ (请填写航班号)\n' + city.en + ' → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
+          return '✈ 国际航班: ' + city.en + ' → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
         }
-        return '✈ Flight: ______ (请填写航班号)\n' + city.en + ' → (经停/转机: ______ 例如 Frankfurt/Munich/Istanbul)\n → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
+        return '✈ 国际航班: ' + city.en + ' → (经停/转机) → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
       })();
       } else {
         // Full sightseeing day: 3-4 spots

@@ -80,9 +80,14 @@ function buildPrompt(b) {
   p += '2. 酒店位置: 必须靠近当天最后一个景点，步行不超过15分钟或地铁2站内\n';
   p += '3. 地址格式: 真实街道名+门牌号+邮编+城市，如"Via Roma 37, 20123 Milan, Italy"\n\n';
   p += '【交通规则】\n';
-  p += '1. 国际航班到达不早于8:00、不晚于22:00；出发航班不早于10:00\n';
-  p += '2. 跨城火车优先选2-4小时车程，标注主要车站名如"Milano Centrale→Venezia Mestre"\n';
-  p += '3. 非枢纽城市(如Nice/Naples/Dubrovnik)返程需标注经停/转机，不写直飞\n';
+  p += '1. 禁止写具体航班号: 只写"国际航班(出发城市→目的地)"或"Flight(Dep→Arr)"，不写CA749等具体号\n';
+  p += '2. 跨城火车写车站名，如"Train: Milano Centrale→Venezia Mestre"\n';
+  p += '3. 非枢纽城市(如Nice/Naples/Dubrovnik)返程标注"需经停/转机"\n';
+  p += '\n【到达日规则·极其重要】\n';
+  p += '1. 国际到达当天必须考虑: 入境排队30-60分钟、取行李20分钟、机场到市区30-90分钟\n';
+  p += '2. 到达日下午实际可用时间仅2-3小时，最多安排1个轻松景点（酒店附近漫步即可）\n';
+  p += '3. 到达日不要安排需要门票的景点（下午太晚可能已关门）\n';
+  p += '4. 到达日住宿说明写"抵达入住，周边适应"\n';
   if (b.localItinerary && b.localItinerary.days) {
     p += '\n【基础行程(在此基础上优化)】\n' + JSON.stringify(b.localItinerary) + '\n';
   }
