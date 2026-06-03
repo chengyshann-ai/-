@@ -1,6 +1,7 @@
 // 申根行程助手 — 后端 API 服务
 // 部署: Vercel / Cloudflare Workers / Node Express
-// 启动: DOUBAO_API_KEY=xxx node server.js
+// 启动: QWEN_API_KEY=xxx node server.js
+// 模型: 阿里云百炼 Qwen-Plus (OpenAI Compatible API)
 
 const express = require('express');
 const cors = require('cors');
@@ -14,12 +15,16 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
 
-const DOUBAO_API_KEY = process.env.DOUBAO_API_KEY;
-const DOUBAO_ENDPOINT_ID = process.env.DOUBAO_ENDPOINT_ID || 'ep-20240601000000-xxxxx';
+const QWEN_API_KEY = process.env.QWEN_API_KEY;
 const PORT = process.env.PORT || 8765;
 
+// Qwen OpenAI Compatible API config
+const QWEN_BASE = 'dashscope.aliyuncs.com';
+const QWEN_PATH = '/compatible-mode/v1/chat/completions';
+const QWEN_MODEL = 'qwen-plus';
+
 // ===== Rate Limiting =====
-const rateLimit = new Map(); // IP -> { count, resetTime }
+const rateLimit = new Map();
 
 function checkRateLimit(ip) {
   const now = Date.now();
@@ -34,7 +39,7 @@ function checkRateLimit(ip) {
 }
 
 // ===== Request Cache =====
-const cache = new Map(); // hash -> { result, timestamp }
+const cache = new Map();
 
 function getCacheKey(params) {
   const str = JSON.stringify(params);
@@ -53,7 +58,6 @@ function checkCache(key) {
 
 function setCache(key, result) {
   cache.set(key, { result, timestamp: Date.now() });
-  // Clean old entries
   if (cache.size > 100) {
     const now = Date.now();
     for (const [k, v] of cache) {
@@ -62,28 +66,28 @@ function setCache(key, result) {
   }
 }
 
-// ===== Doubao API Call =====
-function callDoubao(prompt, callback) {
-  if (!DOUBAO_API_KEY) {
-    callback(null, null); // No key configured, caller should fallback
+// ===== Qwen API Call (OpenAI Compatible) =====
+function callQwen(prompt, callback) {
+  if (!QWEN_API_KEY) {
+    callback(null, null);
     return;
   }
 
   const body = JSON.stringify({
-    model: DOUBAO_ENDPOINT_ID,
+    model: QWEN_MODEL,
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.7,
     max_tokens: 4000
   });
 
   const req = https.request({
-    hostname: 'ark.cn-beijing.volces.com',
+    hostname: QWEN_BASE,
     port: 443,
-    path: '/api/v3/chat/completions',
+    path: QWEN_PATH,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + DOUBAO_API_KEY
+      'Authorization': 'Bearer ' + QWEN_API_KEY
     },
     timeout: 30000
   }, (res) => {
@@ -93,7 +97,7 @@ function callDoubao(prompt, callback) {
       try {
         const json = JSON.parse(data);
         if (res.statusCode !== 200) {
-          console.error('Doubao API error:', res.statusCode, json.error?.message || json.message);
+          console.error('Qwen API error:', res.statusCode, json.error?.message || json.message);
           callback(new Error(json.error?.message || 'API error ' + res.statusCode), null);
           return;
         }
@@ -184,11 +188,11 @@ app.post('/api/generate-itinerary', (req, res) => {
   // Build prompt
   const prompt = buildPrompt(localItinerary || { days: [] }, days, level, departure, startDate);
 
-  // Call Doubao
-  console.log(`[${new Date().toISOString()}] Calling Doubao for ${ip}...`);
-  callDoubao(prompt, (err, content) => {
+  // Call Qwen
+  console.log(`[${new Date().toISOString()}] Calling Qwen for ${ip}...`);
+  callQwen(prompt, (err, content) => {
     if (err || !content) {
-      console.log(`[${new Date().toISOString()}] Doubao failed, returning fallback signal`);
+      console.log(`[${new Date().toISOString()}] Qwen failed, returning fallback signal`);
       return res.json({
         error: err?.message || 'AI service unavailable',
         fallback: true
@@ -202,10 +206,10 @@ app.post('/api/generate-itinerary', (req, res) => {
     try {
       const result = JSON.parse(json);
       setCache(cacheKey, result);
-      console.log(`[${new Date().toISOString()}] Doubao success for ${ip}`);
-      res.json({ ...result, source: 'doubao' });
+      console.log(`[${new Date().toISOString()}] Qwen success for ${ip}`);
+      res.json({ ...result, source: 'qwen' });
     } catch(e) {
-      console.error('Failed to parse Doubao response:', e.message);
+      console.error('Failed to parse Qwen response:', e.message);
       res.json({
         error: 'AI returned invalid format, using local generation',
         fallback: true
@@ -218,7 +222,8 @@ app.post('/api/generate-itinerary', (req, res) => {
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'ok',
-    doubao_configured: !!DOUBAO_API_KEY,
+    qwen_configured: !!QWEN_API_KEY,
+    model: QWEN_MODEL,
     cache_size: cache.size
   });
 });
@@ -227,7 +232,8 @@ app.get('/api/status', (req, res) => {
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀 申根行程 API 已启动 → http://localhost:${PORT}`);
-    console.log(`   豆包API: ${DOUBAO_API_KEY ? '✅ 已配置' : '⚠ 未配置（将使用本地规则）'}`);
+    console.log(`   千问API: ${QWEN_API_KEY ? '✅ 已配置' : '⚠ 未配置（将使用本地规则）'}`);
+    console.log(`   模型: ${QWEN_MODEL}`);
     console.log(`   POST /api/generate-itinerary`);
     console.log(`   GET  /api/status`);
   });
