@@ -1,12 +1,4 @@
-// Map removed — city panel only
-// IMMEDIATE test - verify JS executes
-(function() {
-  var t = document.getElementById('js-test');
-  if (t) { t.style.display = 'none'; t.textContent = '✅ JS运行正常'; }
-  var cp = document.getElementById('city-panel');
-  if (cp && cp.querySelector('span')) cp.querySelector('span').textContent = '⏳ 正在渲染城市...';
-})();
-
+// 申根行程助手 — 前端逻辑
 
 // ==================== FULL SCHENGEN DATA (29 countries, 100+ cities) ====================
 var DATA = {
@@ -715,23 +707,22 @@ function showToast(msg) {
 // ==================== INIT ====================
 // DOM already parsed — but wait for leaflet if needed
 // Init app immediately — city panel has no CDN dependencies
-(function initApp() {
+// ==================== APP INIT ====================
+document.addEventListener('DOMContentLoaded', function() {
   var cp = document.getElementById('city-panel');
-  if (!cp) { setTimeout(initApp, 100); return; }
-  // Simple delegation: handle clicks on labels and country headers
+  if (!cp) return;
+
+  // Delegation: handle clicks on city rows and country labels
   cp.addEventListener('click', function(e) {
     var el = e.target;
-    // Walk up to find .city-row label or .country-label
     while (el && el !== cp) {
       if (el.tagName === 'LABEL' && el.classList.contains('city-row')) {
         var cb = el.querySelector('.city-cb');
         if (cb) {
           cb.checked = !cb.checked;
           var cn = cb.value;
-          if (cb.checked) selectedCities.add(cn);
-          else selectedCities.delete(cn);
-          if (cb.checked) el.classList.add('selected');
-          else el.classList.remove('selected');
+          if (cb.checked) { selectedCities.add(cn); el.classList.add('selected'); }
+          else { selectedCities.delete(cn); el.classList.remove('selected'); }
           updateSelectedDisplay();
         }
         return;
@@ -747,18 +738,24 @@ function showToast(msg) {
 
   updateCityPanel();
   updateSelectedDisplay();
-  var d = new Date(); d.setDate(d.getDate()+14);
-  document.getElementById('start-date-input').value = d.toISOString().split('T')[0];
-  var depSel = document.getElementById('departure-input');
-  if (!depSel) return;
-  for (var i=0;i<DEPARTURE_CITIES.length;i++) {
-    var opt = document.createElement('option'); opt.value=DEPARTURE_CITIES[i]; opt.textContent=DEPARTURE_CITIES[i];
-    depSel.appendChild(opt);
-  }
-  depSel.value = '上海';
-  // Auto-load saved API key for default provider
 
-})();
+  // Set default date (2 weeks from now)
+  var d = new Date(); d.setDate(d.getDate() + 14);
+  var dateEl = document.getElementById('start-date-input');
+  if (dateEl) dateEl.value = d.toISOString().split('T')[0];
+
+  // Populate departure cities
+  var depSel = document.getElementById('departure-input');
+  if (depSel) {
+    for (var i = 0; i < DEPARTURE_CITIES.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = DEPARTURE_CITIES[i];
+      opt.textContent = DEPARTURE_CITIES[i];
+      depSel.appendChild(opt);
+    }
+    depSel.value = '上海';
+  }
+});
 
 // ==================== AI INTEGRATION (optional) ====================
 async function generateWithAI(itinerary, apiKey) {
