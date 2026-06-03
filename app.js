@@ -262,6 +262,16 @@ function generateItinerary() {
   try {
   if (selectedCities.size === 0) { showToast('请至少选择一个城市'); return; }
 
+  // Premium check: free users limited to 3 generations
+  if (!isPremium) {
+    var genCount = parseInt(localStorage.getItem('schengen_gen_count') || '0');
+    if (genCount >= 3) {
+      showToast('免费版已用完(3次)。请输入兑换码解锁无限使用');
+      return;
+    }
+    localStorage.setItem('schengen_gen_count', genCount + 1);
+  }
+
   var daysEl = document.getElementById('days-input');
   var levelEl = document.getElementById('level-input');
   var depEl = document.getElementById('departure-input');
@@ -413,6 +423,18 @@ function generateItinerary() {
       }
     }, 500);
   }).catch(function(){});
+
+  // Skip AI enhancement for free users
+  if (!isPremium) {
+    renderItinerary(); renderTable();
+    document.getElementById('like-section').classList.remove('hidden');
+    document.getElementById('popular-section').classList.remove('hidden');
+    updateLikeUI(); renderPopular();
+    window.scrollTo(0,0);
+    var remaining = 3 - parseInt(localStorage.getItem('schengen_gen_count') || '0');
+    showToast('已生成(' + (remaining > 0 ? remaining : 0) + '次剩余)。输入兑换码解锁AI增强');
+    return;
+  }
 
   // Save local copy for toggle
   var localItinCopy = currentItin;
@@ -855,6 +877,7 @@ function redeemCode() {
     if (data.valid) {
       isPremium = true;
       localStorage.setItem('schengen_premium', 'true');
+      localStorage.removeItem('schengen_gen_count');
       msg.textContent = '✅ 已解锁PRO版！';
       msg.style.color = '#34c759';
       setTimeout(function() {
