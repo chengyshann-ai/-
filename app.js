@@ -726,8 +726,11 @@ function showToast(msg) {
       var el = document.getElementById('api-status-badge');
       if (!el) return;
       if (d.qwen) {
-        el.innerHTML = '🧠 千问AI已连接';
+        el.innerHTML = '🧠 千问AI已连接 ✅';
         el.style.background = '#e8fce8'; el.style.color = '#34c759';
+        el.style.cursor = 'pointer';
+        el.title = '生成行程时将自动调用千问增强';
+        el.onclick = function() { window.open('/api/status', '_blank'); };
       } else {
         el.innerHTML = '⚠ 千问API未配置';
         el.style.background = '#fff5f5'; el.style.color = '#ff9500';
