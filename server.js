@@ -6,9 +6,30 @@ const path = require('path');
 
 const app = express();
 
-// Vercel KV (持久化存储)
-let kv;
-try { const { kv: vkv } = require('@vercel/kv'); kv = vkv; } catch(e) { kv = null; }
+// Upstash Redis (免费 10k/天 持久化)
+let redis;
+try {
+  const { Redis } = require('@upstash/redis');
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_URL || '',
+    token: process.env.UPSTASH_REDIS_TOKEN || ''
+  });
+} catch(e) { redis = null; }
+
+const memStore = {};
+async function kvGet(key) {
+  if (redis) { const v = await redis.get(key); return v; }
+  return memStore[key];
+}
+async function kvSet(key, val) {
+  if (redis) { await redis.set(key, val); return; }
+  memStore[key] = val;
+}
+async function kvIncr(key) {
+  if (redis) return await redis.incr(key);
+  var v = (memStore[key] || 0) + 1; memStore[key] = v; return v;
+}
+function getIP(req) { return req.headers['x-forwarded-for'] || 'unknown'; }
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
 
@@ -115,22 +136,7 @@ const VALID_CODES = (process.env.REDEEM_CODES || 'SCHENGEN2024,TRAVELFREE,VIP-EU
 const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
 
 // KV helper: get/set with memory fallback
-const memStore = {};
-async function kvGet(key) {
-  if (kv) return await kv.get(key);
-  return memStore[key];
-}
-async function kvSet(key, val) {
-  if (kv) return await kv.set(key, val);
-  memStore[key] = val;
-}
-async function kvIncr(key) {
-  if (kv) return await kv.incr(key);
-  var v = (memStore[key] || 0) + 1;
-  memStore[key] = v;
-  return v;
-}
-function getIP(req) { return req.headers['x-forwarded-for'] || 'unknown'; }
+
 
 app.post('/api/redeem', async (req, res) => {
   const ip = getIP(req);
