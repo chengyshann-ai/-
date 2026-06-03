@@ -1,6 +1,6 @@
 // 申根行程助手 — 后端 API 服务
 // 启动: QWEN_API_KEY=xxx node server.js
-// 部署: Vercel / Node Express
+// 部署: Vercel (vercel.json 已配置)
 
 const express = require('express');
 const cors = require('cors');
@@ -20,7 +20,6 @@ app.get('/', (req, res) => {
 
 // ===== 配置 =====
 const QWEN_API_KEY = process.env.QWEN_API_KEY;
-const PORT = process.env.PORT || 8765;
 
 // ===== 限流 =====
 const rateLimit = new Map();
@@ -60,7 +59,7 @@ function setCache(key, result) {
   }
 }
 
-// ===== 构建 prompt（前端传入 localItinerary 节省 Token）=====
+// ===== 构建 prompt =====
 function buildPrompt({ cities, days, level, departure, startDate, localItinerary }) {
   const levelMap = {
     budget: '经济型(住宿350元/晚)',
@@ -68,23 +67,18 @@ function buildPrompt({ cities, days, level, departure, startDate, localItinerary
     luxury: '豪华型(住宿1800元/晚)'
   };
   let prompt = '你是欧洲申根签证行程规划专家。必须返回合法JSON。不要Markdown。\n\n';
-  prompt += '参数:\n';
-  prompt += '- 天数: ' + days + '\n';
-  prompt += '- 预算: ' + (levelMap[level] || level) + '\n';
-  prompt += '- 出发: ' + departure + ' → ' + (cities || []).join(' → ') + '\n';
-  prompt += '- 日期: ' + startDate + '\n';
+  prompt += '参数:\n- 天数: ' + days + '\n- 预算: ' + (levelMap[level] || level) + '\n';
+  prompt += '- 路线: ' + departure + ' → ' + (cities || []).join(' → ') + '\n- 出发: ' + startDate + '\n';
   if (localItinerary && localItinerary.days) {
-    prompt += '\n基础行程:\n' + JSON.stringify(localItinerary, null, 2) + '\n';
-    prompt += '\n请补充 hotel_area、transportation、activities。';
+    prompt += '\n基础行程:\n' + JSON.stringify(localItinerary, null, 2) + '\n请补充 hotel_area、transportation、activities。';
   } else {
-    prompt += '\n请从零规划完整的行程JSON。';
+    prompt += '\n请从零规划完整行程JSON。';
   }
-  prompt += '\n\n格式: {"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}';
-  prompt += '\n只返回JSON。';
+  prompt += '\n\n格式: {"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}\n只返回JSON。';
   return prompt;
 }
 
-// ===== Qwen API 调用 =====
+// ===== Qwen API =====
 function callQwen(prompt, callback) {
   if (!QWEN_API_KEY) return callback(null, null);
 
@@ -112,18 +106,13 @@ function callQwen(prompt, callback) {
       try {
         const json = JSON.parse(data);
         if (res.statusCode !== 200) {
-          console.error('Qwen API error:', res.statusCode, json.error?.message || json.message);
+          console.error('Qwen error:', json.error?.message || json.message);
           return callback(new Error(json.error?.message || 'API error'), null);
         }
-        const content = json.choices?.[0]?.message?.content;
-        callback(null, content);
-      } catch(e) {
-        console.error('Parse Qwen response error:', e);
-        callback(e, null);
-      }
+        callback(null, json.choices?.[0]?.message?.content);
+      } catch(e) { callback(e, null); }
     });
   });
-
   req.on('error', e => callback(e, null));
   req.write(body);
   req.end();
@@ -139,14 +128,10 @@ app.post('/api/generate-itinerary', (req, res) => {
 
   const cacheKey = getCacheKey({ cities, days, level: req.body.level, departure: req.body.departure });
   const cached = checkCache(cacheKey);
-  if (cached) {
-    console.log('Cache hit');
-    return res.json({ ...cached, source: 'cache' });
-  }
+  if (cached) return res.json({ ...cached, source: 'cache' });
 
   const prompt = buildPrompt(req.body);
 
-  console.log('Calling Qwen...');
   callQwen(prompt, (err, result) => {
     if (err || !result) return res.json({ error: err?.message || 'AI unavailable', fallback: true });
 
@@ -163,15 +148,17 @@ app.post('/api/generate-itinerary', (req, res) => {
   });
 });
 
-// ===== 健康检查 =====
 app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', qwen: !!QWEN_API_KEY, cache: cache.size });
 });
 
-// ===== 启动 =====
-app.listen(PORT, () => {
-  console.log(`🚀 http://localhost:${PORT}`);
-  console.log(`千问API: ${QWEN_API_KEY ? '✅' : '⚠ 未配置'}`);
-});
+// Vercel 导出；本地开发时启动监听
+if (require.main === module) {
+  const PORT = process.env.PORT || 8765;
+  app.listen(PORT, () => {
+    console.log('🚀 http://localhost:' + PORT);
+    console.log('千问API:', QWEN_API_KEY ? '✅' : '⚠');
+  });
+}
 
 module.exports = app;
