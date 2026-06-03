@@ -37,13 +37,29 @@ function setc(k, r) { cache.set(k, { r, t: Date.now() }); }
 
 // ===== Prompt =====
 function buildPrompt(b) {
-  const lm = { budget:'经济型', mid:'舒适型', luxury:'豪华型' };
-  let p = '你是申根签证行程规划专家。返回合法JSON。不要Markdown。\n\n';
-  p += '天数:'+b.days+' 预算:'+(lm[b.level]||b.level)+' 路线:'+b.departure+'→'+(b.cities||[]).join('→')+' 日期:'+b.startDate+'\n';
+  const lm = { budget:'经济型(住宿350元/晚)', mid:'舒适型(住宿750元/晚)', luxury:'豪华型(住宿1800元/晚)' };
+  const budgetHotel = { budget:'经济连锁酒店如Ibis、Motel One或评价好的民宿', mid:'四星级酒店如NH Collection、Mercure、Holiday Inn', luxury:'五星级如Hilton、Marriott、Kempinski' };
+  let p = '你是欧洲申根签证专业行程规划师。必须返回合法JSON，不要Markdown。\n\n';
+  p += '【参数】\n';
+  p += '- 天数:' + b.days + '天\n- 预算:' + (lm[b.level]||b.level) + '\n';
+  p += '- 路线:' + b.departure + ' → ' + (b.cities||[]).join(' → ') + '\n- 出发日期:' + b.startDate + '\n\n';
+  p += '【景点规则】\n';
+  p += '1. 每天安排2-4个景点，必须是该城市最著名、签证官认可的经典景点\n';
+  p += '2. 同一天的景点必须地理位置相邻（步行可达或同一片区），不要跨区跑\n';
+  p += '3. 跨城换乘日只安排1个轻松景点，不安排博物馆/美术馆等需3小时以上的\n';
+  p += '4. 威尼斯市内交通必须写Vaporetto水上巴士，禁止写Metro\n\n';
+  p += '【酒店规则】\n';
+  p += '1. 酒店品牌:' + (budgetHotel[b.level]||'舒适型酒店') + '\n';
+  p += '2. 酒店位置: 必须靠近当天最后一个景点，步行不超过15分钟或地铁2站内\n';
+  p += '3. 地址格式: 真实街道名+门牌号+邮编+城市，如"Via Roma 37, 20123 Milan, Italy"\n\n';
+  p += '【交通规则】\n';
+  p += '1. 国际航班到达不早于8:00、不晚于22:00；出发航班不早于10:00\n';
+  p += '2. 跨城火车优先选2-4小时车程，标注主要车站名如"Milano Centrale→Venezia Mestre"\n';
+  p += '3. 非枢纽城市(如Nice/Naples/Dubrovnik)返程需标注经停/转机，不写直飞\n';
   if (b.localItinerary && b.localItinerary.days) {
-    p += '\n基础行程:\n'+JSON.stringify(b.localItinerary)+'\n补充hotel_area/transportation/activities。';
-  } else { p += '\n从零规划行程JSON。'; }
-  p += '\n\n格式:{"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}\n只返回JSON。';
+    p += '\n【基础行程(在此基础上优化)】\n' + JSON.stringify(b.localItinerary) + '\n';
+  }
+  p += '\n返回格式:{"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点1中英双语","景点2"],"accommodation":"N晚说明\n酒店名\nHotel Add: 地址","transportation":"交通详情"}]}\n只返回JSON。';
   return p;
 }
 
