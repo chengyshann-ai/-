@@ -10,23 +10,26 @@ const app = express();
 let redis;
 try {
   const { Redis } = require('@upstash/redis');
-  redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL || '',
-    token: process.env.UPSTASH_REDIS_REST_TOKEN || ''
-  });
-} catch(e) { redis = null; }
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN
+    });
+    console.log('Upstash Redis connected');
+  }
+} catch(e) { console.log('Upstash Redis unavailable:', e.message); redis = null; }
 
 const memStore = {};
 async function kvGet(key) {
-  if (redis) { const v = await redis.get(key); return v; }
+  try { if (redis) { const v = await redis.get(key); return v; } } catch(e) { console.error('Redis get error:', e.message); }
   return memStore[key];
 }
 async function kvSet(key, val) {
-  if (redis) { await redis.set(key, val); return; }
+  try { if (redis) { await redis.set(key, val); return; } } catch(e) { console.error('Redis set error:', e.message); }
   memStore[key] = val;
 }
 async function kvIncr(key) {
-  if (redis) return await redis.incr(key);
+  try { if (redis) return await redis.incr(key); } catch(e) { console.error('Redis incr error:', e.message); }
   var v = (memStore[key] || 0) + 1; memStore[key] = v; return v;
 }
 function getIP(req) { return req.headers['x-forwarded-for'] || 'unknown'; }
@@ -125,6 +128,16 @@ app.post('/api/generate-itinerary', async (req, res) => {
     if (json.startsWith('```')) json = json.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'');
     try { const p=JSON.parse(json); setc(key,p); res.json({...p, source:'qwen'}); }
     catch(e) { res.json({ error:'AI返回非JSON', fallback:true }); }
+  });
+});
+
+
+app.get('/api/debug', (req, res) => {
+  res.json({
+    redis: !!redis,
+    redis_url: process.env.UPSTASH_REDIS_REST_URL ? 'set' : 'missing',
+    codes: VALID_CODES.length + ' codes loaded',
+    qwen: !!QWEN_API_KEY
   });
 });
 
