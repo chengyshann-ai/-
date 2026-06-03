@@ -495,7 +495,7 @@ function renderItinerary() {
   for (var i = 0; i < it.rows.length; i++) {
     var r = it.rows[i];
     html += '<div class="day-block"><div class="day-header"><h3>'+T('day_header')+r.day+T('day_header_suffix')+' · '+formatDateWithWeekday(r.date, currentLang)+'</h3>';
-    html += '<span class="day-city">📍 '+(currentLang==='en'?r.cityEn:r.city)+'</span></div>';
+    html += '<span class="day-city">📍 '+(currentLang==='en' ? getEnglishCityName(r.city) : r.city)+'</span></div>';
     html += '<div class="day-content">';
     var spotsArr = r.spots.split('\n');
     for (var j = 0; j < spotsArr.length; j++) {
@@ -529,7 +529,7 @@ function renderTable() {
     html += '<tr>';
     html += '<td class="day-num">'+r.day+'</td>';
     html += '<td class="date-col">'+formatDateWithWeekday(r.date, currentLang)+'</td>';
-    html += '<td class="city-col">'+(currentLang==='en'?r.cityEn.split(',')[0]:r.city.split(',')[0])+'</td>';
+    html += '<td class="city-col">'+(currentLang==='en' ? getEnglishCityName(r.city).split(',')[0] : r.city.split(',')[0])+'</td>';
     html += '<td class="spots-col" style="white-space:pre-line">'+r.spots+'</td>';
     html += '<td class="hotel-col" style="white-space:pre-line">'+r.hotel+'</td>';
     html += '<td class="transport-col" style="white-space:pre-line">'+r.transport+'</td>';
@@ -702,15 +702,29 @@ function openDeepSeekReview() {
     prompt += '  交通: ' + r.transport.replace(/\n/g, ' | ') + '\n';
   }
   navigator.clipboard.writeText(prompt).then(function() {
-    showToast('行程已复制，即将跳转DeepSeek…');
+    showToast('行程已复制，点击确定跳转DeepSeek');
     setTimeout(function() {
-      window.open('https://chat.deepseek.com/', '_blank');
-    }, 800);
+      var w = window.open('https://chat.deepseek.com/', '_blank');
+      if (!w) { window.location.href = 'https://chat.deepseek.com/'; }
+    }, 500);
   }).catch(function() {
-    window.open('https://chat.deepseek.com/', '_blank');
+    window.location.href = 'https://chat.deepseek.com/';
   });
 }
 
+
+// Lookup English city/country name from Chinese
+function getEnglishCityName(chineseName) {
+  // Try to find in DATA
+  var cn = (chineseName || '').split(',')[0].trim();
+  for (var i = 0; i < CODES.length; i++) {
+    var code = CODES[i];
+    for (var j = 0; j < DATA[code].cities.length; j++) {
+      if (DATA[code].cities[j].n === cn) return DATA[code].cities[j].en + ', ' + DATA[code].en;
+    }
+  }
+  return chineseName; // fallback
+}
 
 // ==================== i18n ====================
 var T = function(key) {
