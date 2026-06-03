@@ -708,6 +708,29 @@ function showToast(msg) {
 // DOM already parsed — but wait for leaflet if needed
 // Init app immediately — city panel has no CDN dependencies
 // ==================== APP INIT ====================
+
+// Check if Qwen API is available
+(function checkAPIStatus() {
+  fetch('/api/status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var el = document.getElementById('api-status-badge');
+      if (!el) return;
+      if (d.qwen) {
+        el.innerHTML = '🧠 千问AI已连接';
+        el.style.background = '#e8fce8'; el.style.color = '#34c759';
+      } else {
+        el.innerHTML = '⚠ 千问API未配置';
+        el.style.background = '#fff5f5'; el.style.color = '#ff9500';
+      }
+    })
+    .catch(function() {
+      var el = document.getElementById('api-status-badge');
+      if (el) { el.innerHTML = '📝 本地模式'; el.style.background = '#f0f0f5'; el.style.color = '#86868b'; }
+    });
+})();
+
+
 document.addEventListener('DOMContentLoaded', function() {
   var cp = document.getElementById('city-panel');
   if (!cp) return;
@@ -808,7 +831,7 @@ function tryEnhanceWithAI(localItin, callback) {
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.fallback || data.error) {
-      console.log('AI fallback, using local itinerary');
+      console.log('千问返回降级信号，使用本地规则');
       callback(null);
       return;
     }
@@ -825,7 +848,7 @@ function tryEnhanceWithAI(localItin, callback) {
     }
   })
   .catch(function(e) {
-    console.log('AI API unreachable, using local:', e.message);
+    console.log('千问API未连接，使用本地规则:', e.message);
     callback(null);
   });
 }
