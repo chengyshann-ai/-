@@ -754,60 +754,73 @@ function getEnglishCityName(chineseName) {
 
 
 
-// ==================== CN→EN Translation for Accommodation/Transport ====================
-var EN_DICT = [
-  // Transport
-  ['国际航班','International Flight'],['航班','Flight'],['火车','Train'],['高铁','High-speed Train'],
-  ['步行','Walking'],['地铁','Metro'],['出租车','Taxi'],['电车','Tram'],
-  ['水上巴士','Vaporetto'],['水上出租','Water Taxi'],
-  ['入境','Immigration'],['取行李','Baggage'],['经停','Layover'],['转机','Transfer'],
-  ['机场至市区','Airport→City'],['机场到市区','Airport→City'],['机场','Airport'],
-  ['酒店至机场','Hotel→Airport'],['至机场','→Airport'],
-  ['市内','Local'],['市内交通','Local Transport'],
-  ['退房','Check-out'],['入住新酒店','Check-in to hotel'],['入住','Check-in'],
-  ['换乘日','Transfer Day'],['到达日','Arrival Day'],
-  ['下午仅安排酒店周边轻松适应','PM: Light walk near hotel'],
-  ['下午','PM'],['上午','AM'],['约','~'],['分钟','min'],['小时','hr'],
-  // Accommodation
-  ['地址','Address'],['五晚住宿','5 nights'],['四晚住宿','4 nights'],['三晚住宿','3 nights'],
-  ['二晚住宿','2 nights'],['一晚住宿','1 night'],
-  ['晚','nights'],['住宿','Stay'],
-  ['五星级豪华酒店','5★ Hotel'],['四星级酒店','4★ Hotel'],['精品酒店','Boutique Hotel'],
-  ['舒适酒店','Comfort Hotel'],['青年旅舍','Hostel'],['经济酒店','Budget Hotel'],
-  ['民宿公寓','Apartment'],['度假酒店','Resort'],['高端套房','Premium Suite'],
-  ['酒店','Hotel'],['自由探索','Free exploration'],
-  ['周边轻松漫步','Neighborhood walk'],['周边漫步','Neighborhood walk'],
-  ['老城区','Old Town'],['市区','City Center'],
-  ['轻松适应','Light acclimatization'],['适应时差','Adjust to timezone'],
-  // City transport specific
-  ['步行·地铁','Walking/Metro'],['步行·电车·地铁','Walking/Tram/Metro'],
-  ['步行·水上巴士','Walking/Vaporetto'],
-  ['步行 / 地铁','Walking / Metro'],['步行 / Metro','Walking / Metro'],
-  // Common patterns
-  [' / Walking','/Walking'],['/ Metro','/Metro'],['/ Taxi','/Taxi'],
-];
-
-function translateToEnglish(text) {
+// ==================== CN→EN Force English Text ====================
+function forceEnglishText(text) {
   if (!text) return '';
   var t = text;
-  // Remove Chinese-only parts in bilingual labels like "火车 / Train:" → "Train:"
-  // Pattern: "Chinese / English" → "English"
-  t = t.replace(/([\u4e00-\u9fff]+) \/ ([A-Za-z])/g, '$2');
-  // Apply dictionary
-  for (var i = 0; i < EN_DICT.length; i++) {
-    var cn = EN_DICT[i][0], en = EN_DICT[i][1];
-    t = t.split(cn).join(en);
-  }
-  // Clean up: collapse spaces, remove trailing colons, etc.
+
+  // === City names ===
+  t = t.replace(/佛罗伦萨/g, 'Florence').replace(/米兰/g, 'Milan').replace(/威尼斯/g, 'Venice');
+  t = t.replace(/罗马/g, 'Rome').replace(/巴黎/g, 'Paris').replace(/那不勒斯/g, 'Naples');
+  t = t.replace(/维也纳/g, 'Vienna').replace(/巴塞罗那/g, 'Barcelona').replace(/马德里/g, 'Madrid');
+  t = t.replace(/柏林/g, 'Berlin').replace(/慕尼黑/g, 'Munich').replace(/布拉格/g, 'Prague');
+  t = t.replace(/布达佩斯/g, 'Budapest').replace(/阿姆斯特丹/g, 'Amsterdam');
+  t = t.replace(/苏黎世/g, 'Zurich').replace(/日内瓦/g, 'Geneva').replace(/里斯本/g, 'Lisbon');
+  t = t.replace(/布鲁塞尔/g, 'Brussels').replace(/哥本哈根/g, 'Copenhagen');
+  t = t.replace(/斯德哥尔摩/g, 'Stockholm').replace(/雅典/g, 'Athens').replace(/赫尔辛基/g, 'Helsinki');
+  t = t.replace(/奥斯陆/g, 'Oslo').replace(/华沙/g, 'Warsaw').replace(/杜布罗夫尼克/g, 'Dubrovnik');
+
+  // === Transport ===
+  t = t.replace(/国际航班/g, 'International Flight').replace(/航班/g, 'Flight');
+  t = t.replace(/高铁/g, 'High-speed Train').replace(/火车/g, 'Train');
+  t = t.replace(/步行/g, 'Walking').replace(/地铁/g, 'Metro').replace(/出租车/g, 'Taxi');
+  t = t.replace(/电车/g, 'Tram').replace(/水上巴士/g, 'Vaporetto').replace(/贡多拉/g, 'Gondola');
+  t = t.replace(/入境/g, 'Immigration').replace(/取行李/g, 'Baggage Claim');
+  t = t.replace(/经停/g, 'Layover').replace(/转机/g, 'Transfer');
+  t = t.replace(/机场至市区/g, 'Airport to City Center');
+  t = t.replace(/机场到市区/g, 'Airport to City Center');
+  t = t.replace(/酒店至机场/g, 'Hotel to Airport').replace(/至机场/g, 'to Airport');
+  t = t.replace(/机场/g, 'Airport').replace(/火车站/g, 'Train Station');
+  t = t.replace(/市内交通/g, 'Local Transport').replace(/市内/g, 'Local');
+  t = t.replace(/退房/g, 'Check-out').replace(/入住新酒店/g, 'Check-in to Hotel');
+  t = t.replace(/入住/g, 'Check-in');
+  t = t.replace(/换乘日/g, 'Transfer Day').replace(/到达日/g, 'Arrival Day');
+  t = t.replace(/下午仅安排酒店周边轻松适应/g, 'PM: Light walk near hotel for acclimatization');
+  t = t.replace(/酒店周边轻松适应/g, 'Light walk near hotel');
+  t = t.replace(/周边轻松漫步/g, 'Neighborhood walk');
+  t = t.replace(/周边漫步/g, 'Neighborhood walk');
+  t = t.replace(/轻松适应/g, 'Acclimatization').replace(/适应时差/g, 'Adjust to timezone');
+  t = t.replace(/下午/g, 'PM').replace(/上午/g, 'AM').replace(/傍晚/g, 'Evening');
+  t = t.replace(/约/g, '~').replace(/分钟/g, 'min').replace(/小时/g, 'hr');
+
+  // === Accommodation ===
+  t = t.replace(/地址 \/ Add:/g, 'Address:').replace(/地址/g, 'Address');
+  t = t.replace(/五晚住宿/g, '5 nights').replace(/四晚住宿/g, '4 nights');
+  t = t.replace(/三晚住宿/g, '3 nights').replace(/二晚住宿/g, '2 nights').replace(/一晚住宿/g, '1 night');
+  t = t.replace(/晚 \/ nights/g, 'nights').replace(/住宿/g, 'Stay');
+  t = t.replace(/五星级豪华酒店/g, '5-Star Hotel').replace(/四星级酒店/g, '4-Star Hotel');
+  t = t.replace(/精品酒店/g, 'Boutique Hotel').replace(/舒适酒店/g, 'Comfort Hotel');
+  t = t.replace(/青年旅舍/g, 'Hostel').replace(/经济酒店/g, 'Budget Hotel');
+  t = t.replace(/民宿公寓/g, 'Apartment').replace(/度假酒店/g, 'Resort');
+  t = t.replace(/高端套房/g, 'Premium Suite').replace(/酒店/g, 'Hotel');
+  t = t.replace(/自由探索/g, 'Free exploration').replace(/老城区/g, 'Old Town');
+  t = t.replace(/市区/g, 'City Center');
+
+  // === Misc ===
+  t = t.replace(/全部景点均位于/g, 'All sights located in').replace(/片区/g, 'area');
+  t = t.replace(/中山路/g, 'Zhongshan Rd').replace(/人民路/g, 'Renmin Rd');
+  t = t.replace(/解放路/g, 'Jiefang Rd').replace(/建设路/g, 'Jianshe Rd');
+  t = t.replace(/号/g, '');
+
+  // === Remove remaining Chinese characters (fallback) ===
+  t = t.replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+/g, '');
   t = t.replace(/\s+/g, ' ').trim();
   t = t.replace(/: \//g, ': ');
+
   return t;
 }
 
-// Helper to strip Chinese chars from a string
-function stripChinese(str) {
-  return str.replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+/g, '').replace(/\s+/g, ' ').trim();
-}
+function translateToEnglish(text) { return forceEnglishText(text); }
 
 // ==================== i18n ====================
 var T = function(key) {
