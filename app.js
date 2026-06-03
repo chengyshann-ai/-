@@ -404,6 +404,15 @@ function generateItinerary() {
   switchTab('itinerary', document.querySelector('.tab-btn[data-tab="itinerary"]'));
   updateLikeUI(); renderPopular();
   window.scrollTo(0,0);
+  // Show source: check API status and display badge
+  fetch('/api/status').then(function(r){return r.json()}).then(function(d){
+    setTimeout(function(){
+      var h = document.querySelector('.itinerary-header h2');
+      if (h && d.qwen && h.querySelector('.ai-badge') === null) {
+        h.innerHTML += ' <span class="ai-badge" style="display:inline-block;background:#f0f0f5;color:#86868b;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:600">📝 本地生成（千问就绪·下次增强）</span>';
+      }
+    }, 500);
+  }).catch(function(){});
 
   // Try AI enhancement in background (non-blocking)
   var localCopy = currentItin;
