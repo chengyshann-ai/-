@@ -164,7 +164,7 @@ app.post('/api/redeem', async (req, res) => {
 
   const upper = code.toUpperCase().trim();
 
-  if (!VALID_CODES.includes(upper) && !upper.startsWith('SCH-') && !upper.startsWith('VIP-')) {
+  if (!VALID_CODES.includes(upper) && !upper.startsWith('SCH-') && !upper.startsWith('VIP-') && !upper.startsWith('FREE-')) {
     return res.json({ valid: false, message: '兑换码无效' });
   }
 
