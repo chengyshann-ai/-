@@ -99,4 +99,69 @@ app.post('/api/generate-itinerary', (req, res) => {
 
 app.get('/api/status', (req, res) => res.json({ status:'ok', qwen:!!QWEN_API_KEY }));
 
+
+// ===== 兑换码系统 =====
+const CODES_FILE = path.join(__dirname, 'codes.json');
+const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
+
+function loadCodes() {
+  try { return JSON.parse(fs.readFileSync(CODES_FILE, 'utf8')); }
+  catch(e) { return { codes: {} }; }
+}
+function saveCodes(data) {
+  fs.writeFileSync(CODES_FILE, JSON.stringify(data, null, 2));
+}
+
+// 验证并消耗兑换码
+app.post('/api/redeem', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: '请输入兑换码' });
+
+  const data = loadCodes();
+  const upper = code.toUpperCase().trim();
+  const entry = data.codes[upper];
+
+  if (!entry) return res.json({ valid: false, message: '兑换码无效' });
+  if (entry.used) return res.json({ valid: false, message: '该兑换码已被使用' });
+
+  // 消耗兑换码
+  entry.used = true;
+  entry.usedAt = new Date().toISOString();
+  saveCodes(data);
+
+  res.json({ valid: true, message: '兑换成功！解锁全部功能', type: entry.type });
+});
+
+// 批量生成兑换码（需admin key）
+app.post('/api/admin/generate-codes', (req, res) => {
+  const { key, prefix, count } = req.body;
+  if (key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
+
+  const data = loadCodes();
+  const n = Math.min(count || 10, 100);
+  const generated = [];
+
+  for (let i = 0; i < n; i++) {
+    let code;
+    do {
+      code = (prefix || 'SCH') + '-' + crypto.randomBytes(4).toString('hex').toUpperCase();
+    } while (data.codes[code]);
+    data.codes[code] = { used: false, created: new Date().toISOString(), type: 'lifetime' };
+    generated.push(code);
+  }
+
+  saveCodes(data);
+  res.json({ generated, count: generated.length });
+});
+
+// 查询兑换码状态
+app.get('/api/admin/codes', (req, res) => {
+  const key = req.query.key;
+  if (key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
+
+  const data = loadCodes();
+  const list = Object.entries(data.codes).map(([code, info]) => ({ code, ...info }));
+  res.json({ total: list.length, used: list.filter(c => c.used).length, codes: list });
+});
+
 module.exports = app;

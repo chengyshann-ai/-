@@ -1,0 +1,7 @@
+{
+  "codes": {
+    "SCHENGEN2024": { "used": false, "created": "2024-01-01", "type": "lifetime" },
+    "TRAVELFREE":   { "used": false, "created": "2024-01-01", "type": "lifetime" },
+    "VIP-EU-001":   { "used": false, "created": "2024-01-01", "type": "lifetime" }
+  }
+}

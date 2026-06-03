@@ -824,6 +824,60 @@ function showToast(msg) {
 // ==================== INIT ====================
 // DOM already parsed — but wait for leaflet if needed
 // Init app immediately — city panel has no CDN dependencies
+
+// ==================== REDEMPTION CODE ====================
+var isPremium = localStorage.getItem('schengen_premium') === 'true';
+
+function checkPremium() {
+  if (isPremium) {
+    var badge = document.getElementById('premium-badge');
+    var box = document.getElementById('redeem-box');
+    if (badge) badge.style.display = 'inline-block';
+    if (box) box.style.display = 'none';
+  }
+}
+
+function redeemCode() {
+  var input = document.getElementById('redeem-input');
+  var msg = document.getElementById('redeem-msg');
+  var code = (input.value || '').toUpperCase().trim();
+  if (!code) { msg.textContent = '请输入兑换码'; msg.style.color = '#ff3b30'; return; }
+
+  msg.textContent = '验证中...'; msg.style.color = '#86868b';
+
+  fetch('/api/redeem', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: code })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.valid) {
+      isPremium = true;
+      localStorage.setItem('schengen_premium', 'true');
+      msg.textContent = '✅ 已解锁PRO版！';
+      msg.style.color = '#34c759';
+      setTimeout(function() {
+        var badge = document.getElementById('premium-badge');
+        var box = document.getElementById('redeem-box');
+        if (badge) badge.style.display = 'inline-block';
+        if (box) box.style.display = 'none';
+      }, 800);
+    } else {
+      msg.textContent = data.message || '无效';
+      msg.style.color = '#ff3b30';
+    }
+  })
+  .catch(function() {
+    msg.textContent = '网络错误';
+    msg.style.color = '#ff3b30';
+  });
+}
+
+// Check on load
+checkPremium();
+
+
 // ==================== APP INIT ====================
 
 // Check if Qwen API is available
