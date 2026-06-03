@@ -265,8 +265,8 @@ function generateItinerary() {
   // Premium check: free users limited to 3 generations
   if (!isPremium) {
     var genCount = parseInt(localStorage.getItem('schengen_gen_count') || '0');
-    if (genCount >= 3) {
-      showToast('免费版已用完(3次)。请输入兑换码解锁无限使用');
+    if (genCount >= 1) {
+      showToast('免费版已用完(1次)。请输入兑换码解锁无限使用');
       return;
     }
     localStorage.setItem('schengen_gen_count', genCount + 1);
@@ -431,7 +431,7 @@ function generateItinerary() {
     document.getElementById('popular-section').classList.remove('hidden');
     updateLikeUI(); renderPopular();
     window.scrollTo(0,0);
-    var remaining = 3 - parseInt(localStorage.getItem('schengen_gen_count') || '0');
+    var remaining = 1 - parseInt(localStorage.getItem('schengen_gen_count') || '0');
     showToast('已生成(' + (remaining > 0 ? remaining : 0) + '次剩余)。输入兑换码解锁AI增强');
     return;
   }
