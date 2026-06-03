@@ -81,6 +81,13 @@ app.post('/api/generate-itinerary', (req, res) => {
   const ip = req.headers['x-forwarded-for'] || 'unknown';
   const b = req.body;
   if (!b.cities || !b.days) return res.status(400).json({ error:'缺少参数', fallback:true });
+  // 免费用户限制1次，PRO用户无限
+  if (!proIPs.has(ip)) {
+    var used = freeUsage.get(ip) || 0;
+    if (used >= 1) return res.status(429).json({ error:'免费次数已用完，请输入兑换码解锁', fallback:true, needRedeem:true });
+    freeUsage.set(ip, used + 1);
+  }
+
   if (!checkRateLimit(ip)) return res.status(429).json({ error:'今日额度用完(5次/天)', fallback:true });
 
   const key = ck({cities:b.cities,days:b.days,level:b.level,departure:b.departure});
@@ -99,12 +106,15 @@ app.post('/api/generate-itinerary', (req, res) => {
 app.get('/api/status', (req, res) => res.json({ status:'ok', qwen:!!QWEN_API_KEY }));
 
 
-// ===== 兑换码系统 (Vercel兼容·内存存储) =====
+// ===== 兑换码 + 用户系统 (Vercel兼容·内存存储) =====
 const VALID_CODES = (process.env.REDEEM_CODES || 'SCHENGEN2024,TRAVELFREE,VIP-EU-001').split(',');
-const usedCodes = new Set();
+const usedCodes = new Set();        // 已使用的兑换码
+const proIPs = new Set();           // 已激活PRO的IP
+const freeUsage = new Map();        // IP → 免费使用次数
 const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
 
 app.post('/api/redeem', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || 'unknown';
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: '请输入兑换码' });
 
@@ -118,7 +128,18 @@ app.post('/api/redeem', (req, res) => {
   }
 
   usedCodes.add(upper);
-  res.json({ valid: true, message: '兑换成功！', type: 'lifetime' });
+  proIPs.add(ip);
+  res.json({ valid: true, message: '兑换成功！已解锁PRO版', type: 'lifetime' });
+});
+
+// 检查用户PRO状态
+app.get('/api/user/status', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || 'unknown';
+  res.json({
+    pro: proIPs.has(ip),
+    freeUsed: freeUsage.get(ip) || 0,
+    freeLimit: 1
+  });
 });
 
 app.post('/api/admin/generate-codes', (req, res) => {

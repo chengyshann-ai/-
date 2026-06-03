@@ -262,15 +262,8 @@ function generateItinerary() {
   try {
   if (selectedCities.size === 0) { showToast('请至少选择一个城市'); return; }
 
-  // Premium check: free users limited to 3 generations
-  if (!isPremium) {
-    var genCount = parseInt(localStorage.getItem('schengen_gen_count') || '0');
-    if (genCount >= 1) {
-      showToast('免费版已用完(1次)。请输入兑换码解锁无限使用');
-      return;
-    }
-    localStorage.setItem('schengen_gen_count', genCount + 1);
-  }
+  // Premium check: server-side via /api/generate-itinerary
+  // (enforced by server returning needRedeem flag)
 
   var daysEl = document.getElementById('days-input');
   var levelEl = document.getElementById('level-input');
@@ -848,15 +841,29 @@ function showToast(msg) {
 // Init app immediately — city panel has no CDN dependencies
 
 // ==================== REDEMPTION CODE ====================
-var isPremium = localStorage.getItem('schengen_premium') === 'true';
+var isPremium = false;
 
 function checkPremium() {
-  if (isPremium) {
-    var badge = document.getElementById('premium-badge');
-    var box = document.getElementById('redeem-box');
-    if (badge) badge.style.display = 'inline-block';
-    if (box) box.style.display = 'none';
-  }
+  // Check server-side PRO status
+  fetch('/api/user/status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      isPremium = d.pro;
+      if (isPremium) {
+        var badge = document.getElementById('premium-badge');
+        var box = document.getElementById('redeem-box');
+        if (badge) badge.style.display = 'inline-block';
+        if (box) box.style.display = 'none';
+      }
+    })
+    .catch(function() {
+      // Fallback to localStorage for offline/cached
+      isPremium = localStorage.getItem('schengen_premium') === 'true';
+      if (isPremium) {
+        var badge = document.getElementById('premium-badge');
+        if (badge) badge.style.display = 'inline-block';
+      }
+    });
 }
 
 function redeemCode() {
@@ -1027,6 +1034,11 @@ function tryEnhanceWithAI(localItin, callback) {
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
+    if (data.needRedeem) {
+      showToast('免费次数已用完，请输入兑换码');
+      callback(null);
+      return;
+    }
     if (data.fallback || data.error) {
       console.log('千问返回降级信号，使用本地规则');
       callback(null);
