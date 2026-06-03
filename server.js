@@ -92,7 +92,7 @@ function buildPrompt(b) {
     p += '\n【基础行程(在此基础上优化)】\n' + JSON.stringify(b.localItinerary) + '\n';
   }
   p += '\n返回格式:{"route":"城市1→城市2","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市名","touringSpots":["景点1 / Attraction1"],"accommodation":"住宿中英双语","transportation":"交通中英双语"}]}\n';
-  p += 'accommodation和transportation必须中英双语(如"地址 / Add: Via Roma")。touringSpots中英双语(如"埃菲尔铁塔 / Eiffel Tower")。只返回JSON。';
+  p += 'touringSpots中英双语。accommodation和transportation用中文。只返回JSON。';
   return p;
 }
 
