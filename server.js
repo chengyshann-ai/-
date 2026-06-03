@@ -5,6 +5,10 @@ const crypto = require('crypto');
 const path = require('path');
 
 const app = express();
+
+// Vercel KV (持久化存储)
+let kv;
+try { const { kv: vkv } = require('@vercel/kv'); kv = vkv; } catch(e) { kv = null; }
 app.use(cors());
 app.use(express.json({ limit: '50kb' }));
 
@@ -77,15 +81,15 @@ function callQwen(prompt, cb) {
 }
 
 // ===== API =====
-app.post('/api/generate-itinerary', (req, res) => {
+app.post('/api/generate-itinerary', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || 'unknown';
   const b = req.body;
   if (!b.cities || !b.days) return res.status(400).json({ error:'缺少参数', fallback:true });
   // 免费用户限制1次，PRO用户无限
-  if (!proIPs.has(ip)) {
-    var used = freeUsage.get(ip) || 0;
-    if (used >= 1) return res.status(429).json({ error:'免费次数已用完，请输入兑换码解锁', fallback:true, needRedeem:true });
-    freeUsage.set(ip, used + 1);
+  const isPro = await kvGet('pro:' + ip);
+  if (!isPro) {
+    const used = await kvIncr('free:' + ip);
+    if (used > 1) return res.status(429).json({ error:'免费次数已用完，请输入兑换码解锁', fallback:true, needRedeem:true });
   }
 
   if (!checkRateLimit(ip)) return res.status(429).json({ error:'今日额度用完(5次/天)', fallback:true });
@@ -106,15 +110,30 @@ app.post('/api/generate-itinerary', (req, res) => {
 app.get('/api/status', (req, res) => res.json({ status:'ok', qwen:!!QWEN_API_KEY }));
 
 
-// ===== 兑换码 + 用户系统 (Vercel兼容·内存存储) =====
+// ===== 兑换码 + 用户系统 (Vercel KV 持久化) =====
 const VALID_CODES = (process.env.REDEEM_CODES || 'SCHENGEN2024,TRAVELFREE,VIP-EU-001').split(',');
-const usedCodes = new Set();        // 已使用的兑换码
-const proIPs = new Set();           // 已激活PRO的IP
-const freeUsage = new Map();        // IP → 免费使用次数
 const ADMIN_KEY = process.env.ADMIN_KEY || 'admin123';
 
-app.post('/api/redeem', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || 'unknown';
+// KV helper: get/set with memory fallback
+const memStore = {};
+async function kvGet(key) {
+  if (kv) return await kv.get(key);
+  return memStore[key];
+}
+async function kvSet(key, val) {
+  if (kv) return await kv.set(key, val);
+  memStore[key] = val;
+}
+async function kvIncr(key) {
+  if (kv) return await kv.incr(key);
+  var v = (memStore[key] || 0) + 1;
+  memStore[key] = v;
+  return v;
+}
+function getIP(req) { return req.headers['x-forwarded-for'] || 'unknown'; }
+
+app.post('/api/redeem', async (req, res) => {
+  const ip = getIP(req);
   const { code } = req.body;
   if (!code) return res.status(400).json({ error: '请输入兑换码' });
 
@@ -123,23 +142,20 @@ app.post('/api/redeem', (req, res) => {
   if (!VALID_CODES.includes(upper) && !upper.startsWith('SCH-') && !upper.startsWith('VIP-')) {
     return res.json({ valid: false, message: '兑换码无效' });
   }
-  if (usedCodes.has(upper)) {
-    return res.json({ valid: false, message: '该兑换码已被使用' });
-  }
 
-  usedCodes.add(upper);
-  proIPs.add(ip);
+  const used = await kvGet('code:' + upper);
+  if (used) return res.json({ valid: false, message: '该兑换码已被使用' });
+
+  await kvSet('code:' + upper, '1');
+  await kvSet('pro:' + ip, '1');
   res.json({ valid: true, message: '兑换成功！已解锁PRO版', type: 'lifetime' });
 });
 
-// 检查用户PRO状态
-app.get('/api/user/status', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || 'unknown';
-  res.json({
-    pro: proIPs.has(ip),
-    freeUsed: freeUsage.get(ip) || 0,
-    freeLimit: 1
-  });
+app.get('/api/user/status', async (req, res) => {
+  const ip = getIP(req);
+  const pro = await kvGet('pro:' + ip);
+  const used = await kvGet('free:' + ip) || 0;
+  res.json({ pro: !!pro, freeUsed: Number(used), freeLimit: 1 });
 });
 
 app.post('/api/admin/generate-codes', (req, res) => {
