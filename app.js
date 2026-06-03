@@ -186,12 +186,12 @@ function getHotelAddr(city, countryCode) {
 function getIntercityTransport(from, to) {
   var d = Math.abs(from.lat - to.lat) + Math.abs(from.lng - to.lng);
   if (d < 8) {
-    return '🚂 火车: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁';
+    return '🚂 火车 / Train: ' + from.n + ' → ' + to.n + '\n市内 / Local: Walking / Metro';
   }
   if (d < 15) {
-    return '🚂 火车: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁';
+    return '🚂 火车 / Train: ' + from.n + ' → ' + to.n + '\n市内 / Local: Walking / Metro';
   }
-  return '✈ 航班: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁 / 出租车';
+  return '✈ 航班 / Flight: ' + from.n + ' → ' + to.n + '\n市内 / Local: Walking / Metro / Taxi';
 }
 
 // ==================== STATE ====================
@@ -308,7 +308,7 @@ function generateItinerary() {
     var stayStartDay = dayNum, stayEndDay = dayNum + nDays - 1;
     var stayStartDate = new Date(start); stayStartDate.setDate(stayStartDate.getDate() + stayStartDay - 1);
     var stayEndDate = new Date(start); stayEndDate.setDate(stayEndDate.getDate() + stayEndDay - 1);
-    var hotelInfo = getHotel(city, level, i) + '\n地址: ' + getHotelAddr(city, city.country);
+    var hotelInfo = getHotel(city, level, i) + '\n地址 / Add: ' + getHotelAddr(city, city.country);
 
     var citySpotIdx = 0;
     for (var d = 0; d < nDays; d++) {
@@ -325,10 +325,10 @@ function generateItinerary() {
       // City-specific transport — Venice has no metro, only water transport
       var getLocalTransport = function(cityObj) {
         if (cityObj.n === '威尼斯' || cityObj.en === 'Venice')
-          return 'Walking / Vaporetto (Water Bus) / Water Taxi';
+          return '步行·水上巴士 / Walking·Vaporetto';
         if (cityObj.en === 'Amsterdam' || cityObj.en === 'Rotterdam')
-          return 'Walking / Tram / Metro / Bicycle';
-        return 'Walking / Metro / Public Transportation';
+          return '步行·电车·地铁 / Walking·Tram·Metro';
+        return '步行·地铁 / Walking·Metro';
       };
       // Take next N unused spots, optionally skip heavy attractions
       var takeSpots = function(n, skipHeavy) {
@@ -351,7 +351,7 @@ function generateItinerary() {
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
           touringSpots = '到达日: 入境排队+取行李约60分钟，机场至市区约40分钟\n下午: 酒店周边漫步适应时差';
         }
-        transport = '✈ 国际航班: ' + departure + ' → ' + city.en + '\n⚠ 入境+取行李约60分钟 · 机场至市区约40分钟\n下午仅安排酒店周边轻松适应';
+        transport = '✈ 国际航班 / Intl Flight: ' + departure + ' → ' + city.en + '\n⚠ 入境+取行李 ~60min · 机场至市区 ~40min\nArrival: immigration+bags ~60min, airport→city ~40min\n下午仅安排酒店周边轻松适应 / Afternoon: rest near hotel';
       } else if (isFirstDay && i > 0) {
         // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
@@ -365,7 +365,7 @@ function generateItinerary() {
         transport = (function() {
         var hubs = ['Paris','Frankfurt','Amsterdam','Rome','Milan','Madrid','Barcelona','Munich','Zurich','Vienna','Lisbon','Athens','Brussels','Copenhagen','Stockholm','Helsinki','Oslo','Warsaw','Budapest','Prague','Berlin'];
         if (hubs.indexOf(city.en) >= 0) {
-          return '✈ 国际航班: ' + city.en + ' → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
+          return '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
         }
         return '✈ 国际航班: ' + city.en + ' → (经停/转机) → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
       })();
@@ -527,8 +527,8 @@ function renderItinerary() {
     for (var j = 0; j < spotsArr.length; j++) {
       html += '<div class="day-item"><span class="time">🎯</span><span class="desc">'+spotsArr[j]+'</span></div>';
     }
-    if (r.hotel) html += '<div class="day-item" style="margin-top:4px"><span class="time">🏨</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+(currentLang==='en' ? translateToEN(r.hotel) : r.hotel)+'</span></div>';
-    html += '<div class="day-item"><span class="time">🚗</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+(currentLang==='en' ? translateToEN(r.transport) : r.transport)+'</span></div>';
+    if (r.hotel) html += '<div class="day-item" style="margin-top:4px"><span class="time">🏨</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+r.hotel+'</span></div>';
+    html += '<div class="day-item"><span class="time">🚗</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+r.transport+'</span></div>';
     html += '</div></div>';
   }
 
@@ -557,8 +557,8 @@ function renderTable() {
     html += '<td class="date-col">'+formatDateWithWeekday(r.date, currentLang)+'</td>';
     html += '<td class="city-col">'+(currentLang==='en' ? getEnglishCityName(r.city).split(',')[0] : r.city.split(',')[0])+'</td>';
     html += '<td class="spots-col" style="white-space:pre-line">'+r.spots+'</td>';
-    html += '<td class="hotel-col" style="white-space:pre-line">'+(currentLang==='en' ? translateToEN(r.hotel) : r.hotel)+'</td>';
-    html += '<td class="transport-col" style="white-space:pre-line">'+(currentLang==='en' ? translateToEN(r.transport) : r.transport)+'</td>';
+    html += '<td class="hotel-col" style="white-space:pre-line">'+r.hotel+'</td>';
+    html += '<td class="transport-col" style="white-space:pre-line">'+r.transport+'</td>';
     html += '</tr>';
   }
   html += '</tbody></table></div>';
@@ -752,30 +752,6 @@ function getEnglishCityName(chineseName) {
   return chineseName; // fallback
 }
 
-
-// Quick CN→EN translation for common itinerary phrases
-function translateToEN(text) {
-  if (!text) return '';
-  var t = text;
-  var map = {
-    '地址:':'Address:','酒店':'Hotel','住宿':'Accommodation','晚':'nights','抵达入住':'Arrival & Check-in',
-    '周边适应':'Explore nearby','周边漫步':'Neighborhood walk','火车:':'Train:','航班:':'Flight:',
-    '国际航班:':'Intl Flight:','市内交通:':'Local:','步行':'Walking','地铁':'Metro',
-    '出租车':'Taxi','机场至市区':'Airport to city','入境':'Immigration','取行李':'Baggage',
-    '约':'~','分钟':'min','小时':'hr','酒店至机场':'Hotel to airport',
-    '到达日':'Arrival Day','换乘日':'Transfer Day','退房':'Check-out','入住新酒店':'Check-in',
-    '轻松漫步':'Leisure walk','适应时差':'Adjust to timezone',
-    '经停':'Layover','转机':'Transfer','四星级酒店':'4★ Hotel','五星级豪华酒店':'5★ Luxury',
-    '精品酒店':'Boutique Hotel','青年旅舍':'Hostel','经济酒店':'Budget Hotel',
-    '民宿公寓':'Apartment','舒适酒店':'Comfort Hotel','度假酒店':'Resort','高端套房':'Premium Suite',
-    '市内':'City center','中山路':'Zhongshan Rd','人民路':'Renmin Rd',
-  };
-  for (var cn in map) {
-    t = t.split(cn).join(map[cn]);
-    // Also handle lowercase matches
-  }
-  return t;
-}
 
 // ==================== i18n ====================
 var T = function(key) {
