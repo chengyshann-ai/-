@@ -414,15 +414,53 @@ function generateItinerary() {
     }, 500);
   }).catch(function(){});
 
-  // Try AI enhancement in background (non-blocking)
-  var localCopy = currentItin;
-  tryEnhanceWithAI(localCopy, function(enhanced) {
+  // Save local copy for toggle
+  var localItinCopy = currentItin;
+  localItinCopy.source = 'local';
+
+  // Show AI loading hint with toggle
+  var hintDiv = document.createElement('div');
+  hintDiv.id = 'ai-hint';
+  hintDiv.style.cssText = 'text-align:center;padding:10px 14px;margin:10px 0;background:#f0f3ff;border-radius:8px;font-size:12px;color:#4361ee;font-weight:500;border:1px solid #d0d8ff';
+  hintDiv.innerHTML = '⏳ 千问AI增强中... 预计5-15秒';
+  var tab = document.getElementById('tab-itinerary');
+  if (tab && tab.firstChild) tab.insertBefore(hintDiv, tab.firstChild);
+
+  window._aiReady = false;
+  window._localItin = localItinCopy;
+  window._aiItin = null;
+
+  window.showLocal = function() {
+    currentItin = window._localItin;
+    renderItinerary(); renderTable();
+    var h = document.getElementById('ai-hint');
+    if (h) h.innerHTML = '📝 本地规则版 | <a href="#" onclick="showAI()" style="color:#4361ee">查看AI增强版</a>' + (window._aiReady ? '' : ' (等待中...)');
+  };
+  window.showAI = function() {
+    if (window._aiItin) {
+      currentItin = window._aiItin;
+      renderItinerary(); renderTable();
+      var h = document.getElementById('ai-hint');
+      if (h) { h.style.background = '#e8fce8'; h.style.color = '#34c759'; h.style.borderColor = '#b8e6b8'; h.innerHTML = '🧠 千问AI增强版 | <a href="#" onclick="showLocal()" style="color:#4361ee">切换本地版</a>'; }
+    }
+  };
+
+  // Call AI
+  tryEnhanceWithAI(localItinCopy, function(enhanced) {
     if (enhanced) {
+      enhanced.source = 'qwen';
+      window._aiItin = enhanced;
+      window._aiReady = true;
       currentItin = enhanced;
       currentItinId = 'ai_' + Date.now();
       saveRecipe(currentItin);
       renderItinerary(); renderTable();
-      showToast('✨ 豆包AI已增强行程！');
+      var h = document.getElementById('ai-hint');
+      if (h) { h.style.background = '#e8fce8'; h.style.color = '#34c759'; h.style.borderColor = '#b8e6b8'; h.innerHTML = '🧠 千问AI增强版 ✅ | <a href="#" onclick="showLocal()" style="color:#4361ee">切换本地版</a>'; }
+      showToast('✨ 千问AI增强完成！');
+    } else {
+      var h = document.getElementById('ai-hint');
+      if (h) { h.style.background = '#fff5f5'; h.style.color = '#ff9500'; h.style.borderColor = '#ffd0d0'; h.innerHTML = '📝 千问未响应，使用本地规则'; }
     }
   });
 
@@ -443,7 +481,14 @@ function simpleHash(str) { var h=0; for(var i=0;i<str.length;i++){h=((h<<5)-h)+s
 function renderItinerary() {
   if (!currentItin) return;
   var it = currentItin;
-  var html = '<div class="itinerary-header"><div><h2>'+it.route+'</h2>';
+  var html = '<div class="itinerary-header"><div><h2>'+it.route;
+  if (it.source === 'qwen') {
+    html += ' <span style="display:inline-block;background:#e8fce8;color:#34c759;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">🧠 千问AI增强</span>';
+  } else if (it.source === 'local') {
+    html += ' <span style="display:inline-block;background:#f0f0f5;color:#86868b;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">📝 本地规则生成</span>';
+  }
+  html += '</h2>';
+
   html += '<div class="itinerary-meta">'+it.days+'天 · '+it.cities.length+'国'+it.cities.length+'城 · '+it.departure+'出发</div></div>';
   html += '<div class="itinerary-meta" style="text-align:right">出发日期: '+it.startDate+'</div></div>';
 
