@@ -481,20 +481,20 @@ function simpleHash(str) { var h=0; for(var i=0;i<str.length;i++){h=((h<<5)-h)+s
 function renderItinerary() {
   if (!currentItin) return;
   var it = currentItin;
-  var html = '<div class="itinerary-header"><div><h2>'+it.route;
+  var html = '<div class="itinerary-header"><div><h2>'+(currentLang==='en' && it.routeEn ? it.routeEn : it.route);
   if (it.source === 'qwen') {
-    html += ' <span style="display:inline-block;background:#e8fce8;color:#34c759;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">🧠 千问AI增强</span>';
+    html += ' <span style="display:inline-block;background:#e8fce8;color:#34c759;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">'+T('ai_badge_qwen')+'</span>';
   } else if (it.source === 'local') {
-    html += ' <span style="display:inline-block;background:#f0f0f5;color:#86868b;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">📝 本地规则生成</span>';
+    html += ' <span style="display:inline-block;background:#f0f0f5;color:#86868b;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">'+T('ai_badge_local')+'</span>';
   }
   html += '</h2>';
 
-  html += '<div class="itinerary-meta">'+it.days+'天 · '+it.cities.length+'国'+it.cities.length+'城 · '+it.departure+'出发</div></div>';
-  html += '<div class="itinerary-meta" style="text-align:right">出发日期: '+it.startDate+'</div></div>';
+  html += '<div class="itinerary-meta">'+it.days+T('days_unit')+' · '+it.cities.length+T('countries_unit')+' '+it.cities.length+T('cities_unit')+' · '+T('departure_from')+' '+it.departure+'</div></div>';
+  html += '<div class="itinerary-meta" style="text-align:right">'+T('departure_date')+': '+it.startDate+'</div></div>';
 
   for (var i = 0; i < it.rows.length; i++) {
     var r = it.rows[i];
-    html += '<div class="day-block"><div class="day-header"><h3>Day '+r.day+' · '+formatDateWithWeekday(r.date, currentLang)+'</h3>';
+    html += '<div class="day-block"><div class="day-header"><h3>'+T('day_header')+r.day+T('day_header_suffix')+' · '+formatDateWithWeekday(r.date, currentLang)+'</h3>';
     html += '<span class="day-city">📍 '+(currentLang==='en'?r.cityEn:r.city)+'</span></div>';
     html += '<div class="day-content">';
     var spotsArr = r.spots.split('\n');
@@ -711,10 +711,60 @@ function openDeepSeekReview() {
   });
 }
 
+
+// ==================== i18n ====================
+var T = function(key) {
+  var map = {
+    'days_unit': {zh:'天',en:' days'},
+    'countries_unit': {zh:'国',en:' countries'},
+    'cities_unit': {zh:'城',en:' cities'},
+    'departure_from': {zh:'出发',en:'from'},
+    'departure_date': {zh:'出发日期',en:'Departure'},
+    'total_cost': {zh:'预估总花费',en:'Est. Total'},
+    'flights': {zh:'往返机票',en:'Flights'},
+    'hotel': {zh:'住宿',en:'Hotel'},
+    'meals': {zh:'餐饮',en:'Meals'},
+    'intercity': {zh:'城际交通',en:'Intercity'},
+    'attractions': {zh:'景点门票',en:'Attractions'},
+    'day_header': {zh:'第',en:'Day '},
+    'day_header_suffix': {zh:'天',en:''},
+    'ai_badge_qwen': {zh:'🧠 千问AI增强',en:'🧠 Qwen AI Enhanced'},
+    'ai_badge_local': {zh:'📝 本地规则生成',en:'📝 Local Engine'},
+    'download_excel': {zh:'📊 下载Excel (.xlsx)',en:'📊 Download Excel'},
+    'download_csv': {zh:'📄 下载CSV',en:'📄 Download CSV'},
+    'copy_table': {zh:'📋 复制表格',en:'📋 Copy Table'},
+    'deepseek_review': {zh:'🤖 DeepSeek审阅',en:'🤖 DeepSeek Review'},
+    'back_modify': {zh:'↩ 修改参数',en:'↩ Modify'},
+    'detail_tab': {zh:'📋 详细行程',en:'📋 Detail'},
+    'table_tab': {zh:'📊 标准表格',en:'📊 Table'},
+    'generate_btn': {zh:'✨ 生成行程单',en:'✨ Generate'},
+    'reset_btn': {zh:'重置',en:'Reset'},
+    'like_btn': {zh:'点赞',en:'Like'},
+    'liked_btn': {zh:'已点赞',en:'Liked'},
+    'regenerate_btn': {zh:'🔀 换一换',en:'🔀 New'},
+    'popular_title': {zh:'🔥 热门行程',en:'🔥 Popular'},
+    'select_cities': {zh:'个城市已选',en:' cities'},
+    'not_selected': {zh:'未选择',en:'None'},
+  };
+  var entry = map[key];
+  if (!entry) return key;
+  return entry[currentLang] || entry['zh'];
+};
+
 // ==================== LANGUAGE ====================
 function toggleLanguage() {
   currentLang = currentLang==='zh'?'en':'zh';
   document.getElementById('lang-btn').textContent = currentLang==='zh'?'English':'中文';
+  // Update sticky bar buttons
+  var btns = document.querySelectorAll('.sticky-bar .btn-sm');
+  var labels = ['download_excel','download_csv','copy_table','deepseek_review'];
+  for (var i = 0; i < Math.min(btns.length, labels.length); i++) {
+    btns[i].textContent = T(labels[i]);
+  }
+  // Update tab buttons
+  var tabs = document.querySelectorAll('.tab-btn');
+  if (tabs[0]) tabs[0].textContent = T('detail_tab');
+  if (tabs[1]) tabs[1].textContent = T('table_tab');
   if (currentItin) { renderItinerary(); renderTable(); }
 }
 
