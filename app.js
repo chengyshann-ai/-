@@ -527,8 +527,8 @@ function renderItinerary() {
     for (var j = 0; j < spotsArr.length; j++) {
       html += '<div class="day-item"><span class="time">🎯</span><span class="desc">'+spotsArr[j]+'</span></div>';
     }
-    if (r.hotel) html += '<div class="day-item" style="margin-top:4px"><span class="time">🏨</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+r.hotel+'</span></div>';
-    html += '<div class="day-item"><span class="time">🚗</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+r.transport+'</span></div>';
+    if (r.hotel) html += '<div class="day-item" style="margin-top:4px"><span class="time">🏨</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+(currentLang==='en' ? translateToEnglish(r.hotel) : r.hotel)+'</span></div>';
+    html += '<div class="day-item"><span class="time">🚗</span><span class="desc" style="white-space:pre-line;font-size:10px;color:var(--text-secondary)">'+(currentLang==='en' ? translateToEnglish(r.transport) : r.transport)+'</span></div>';
     html += '</div></div>';
   }
 
@@ -557,8 +557,8 @@ function renderTable() {
     html += '<td class="date-col">'+formatDateWithWeekday(r.date, currentLang)+'</td>';
     html += '<td class="city-col">'+(currentLang==='en' ? getEnglishCityName(r.city).split(',')[0] : r.city.split(',')[0])+'</td>';
     html += '<td class="spots-col" style="white-space:pre-line">'+r.spots+'</td>';
-    html += '<td class="hotel-col" style="white-space:pre-line">'+r.hotel+'</td>';
-    html += '<td class="transport-col" style="white-space:pre-line">'+r.transport+'</td>';
+    html += '<td class="hotel-col" style="white-space:pre-line">'+(currentLang==='en' ? translateToEnglish(r.hotel) : r.hotel)+'</td>';
+    html += '<td class="transport-col" style="white-space:pre-line">'+(currentLang==='en' ? translateToEnglish(r.transport) : r.transport)+'</td>';
     html += '</tr>';
   }
   html += '</tbody></table></div>';
@@ -752,6 +752,62 @@ function getEnglishCityName(chineseName) {
   return chineseName; // fallback
 }
 
+
+
+// ==================== CN→EN Translation for Accommodation/Transport ====================
+var EN_DICT = [
+  // Transport
+  ['国际航班','International Flight'],['航班','Flight'],['火车','Train'],['高铁','High-speed Train'],
+  ['步行','Walking'],['地铁','Metro'],['出租车','Taxi'],['电车','Tram'],
+  ['水上巴士','Vaporetto'],['水上出租','Water Taxi'],
+  ['入境','Immigration'],['取行李','Baggage'],['经停','Layover'],['转机','Transfer'],
+  ['机场至市区','Airport→City'],['机场到市区','Airport→City'],['机场','Airport'],
+  ['酒店至机场','Hotel→Airport'],['至机场','→Airport'],
+  ['市内','Local'],['市内交通','Local Transport'],
+  ['退房','Check-out'],['入住新酒店','Check-in to hotel'],['入住','Check-in'],
+  ['换乘日','Transfer Day'],['到达日','Arrival Day'],
+  ['下午仅安排酒店周边轻松适应','PM: Light walk near hotel'],
+  ['下午','PM'],['上午','AM'],['约','~'],['分钟','min'],['小时','hr'],
+  // Accommodation
+  ['地址','Address'],['五晚住宿','5 nights'],['四晚住宿','4 nights'],['三晚住宿','3 nights'],
+  ['二晚住宿','2 nights'],['一晚住宿','1 night'],
+  ['晚','nights'],['住宿','Stay'],
+  ['五星级豪华酒店','5★ Hotel'],['四星级酒店','4★ Hotel'],['精品酒店','Boutique Hotel'],
+  ['舒适酒店','Comfort Hotel'],['青年旅舍','Hostel'],['经济酒店','Budget Hotel'],
+  ['民宿公寓','Apartment'],['度假酒店','Resort'],['高端套房','Premium Suite'],
+  ['酒店','Hotel'],['自由探索','Free exploration'],
+  ['周边轻松漫步','Neighborhood walk'],['周边漫步','Neighborhood walk'],
+  ['老城区','Old Town'],['市区','City Center'],
+  ['轻松适应','Light acclimatization'],['适应时差','Adjust to timezone'],
+  // City transport specific
+  ['步行·地铁','Walking/Metro'],['步行·电车·地铁','Walking/Tram/Metro'],
+  ['步行·水上巴士','Walking/Vaporetto'],
+  ['步行 / 地铁','Walking / Metro'],['步行 / Metro','Walking / Metro'],
+  // Common patterns
+  [' / Walking','/Walking'],['/ Metro','/Metro'],['/ Taxi','/Taxi'],
+];
+
+function translateToEnglish(text) {
+  if (!text) return '';
+  var t = text;
+  // Remove Chinese-only parts in bilingual labels like "火车 / Train:" → "Train:"
+  // Pattern: "Chinese / English" → "English"
+  t = t.replace(/([\u4e00-\u9fff]+) \/ ([A-Za-z])/g, '$2');
+  // Apply dictionary
+  for (var i = 0; i < EN_DICT.length; i++) {
+    var cn = EN_DICT[i][0], en = EN_DICT[i][1];
+    t = t.split(cn).join(en);
+  }
+  // Clean up: collapse spaces, remove trailing colons, etc.
+  t = t.replace(/\s+/g, ' ').trim();
+  t = t.replace(/: \//g, ': ');
+  return t;
+}
+
+// Helper to strip Chinese chars from a string
+function stripChinese(str) {
+  return str.replace(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]+/g, '').replace(/\s+/g, ' ').trim();
+}
 
 // ==================== i18n ====================
 var T = function(key) {
