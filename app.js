@@ -145,7 +145,14 @@ var HOTELS = {
 function getHotel(city, level, dayIdx) {
   var opts = HOTELS[level];
   var h = opts[dayIdx % opts.length];
-  return h.chain + ' ' + city.en + ' ' + h.suffix;
+  // Chinese hotel name format
+  var hotelNames = {
+    budget: ['青年旅舍','经济酒店','民宿公寓'],
+    mid: ['四星级酒店','精品酒店','舒适酒店'],
+    luxury: ['五星级豪华酒店','度假酒店','高端套房']
+  };
+  var cnNames = hotelNames[level] || hotelNames['mid'];
+  return cnNames[dayIdx % cnNames.length] + '（' + h.chain + ' ' + city.en + '）';
 }
 function getHotelAddr(city, countryCode) {
   // Country-appropriate street names and formats
@@ -168,7 +175,7 @@ function getHotelAddr(city, countryCode) {
     FI: { streets: ['Mannerheimintie','Aleksanterinkatu','Esplanadi','Bulevardi'], fmt: '{street} {num}, {zip} {city}, Finland' },
   };
   var c = countryCode || 'IT';
-  var map = addrMap[c] || { streets: ['High Street','Main Street','Park Lane','Church Street'], fmt: '{num} {street}, {zip} {city}' };
+  var map = addrMap[c] || { streets: ['中山路','人民路','解放路','建设路'], fmt: '{street}{num}号, {zip} {city}' };
   var idx = Math.abs((city.lat * 100) % map.streets.length) | 0;
   var num = 10 + Math.abs((city.lng * 37) % 190) | 0;
   var zip = (c === 'DE' || c === 'AT') ? (10000 + Math.abs(city.lat * 1000 % 90000) | 0) : (10000 + Math.abs(city.lng * 700 % 90000) | 0);
@@ -179,12 +186,12 @@ function getHotelAddr(city, countryCode) {
 function getIntercityTransport(from, to) {
   var d = Math.abs(from.lat - to.lat) + Math.abs(from.lng - to.lng);
   if (d < 8) {
-    return '🚂 Train: ' + from.en + ' → ' + to.en + '\n市内: Walking / Metro';
+    return '🚂 火车: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁';
   }
   if (d < 15) {
-    return '🚂 Train: ' + from.en + ' Hbf → ' + to.en + ' Hbf\n市内: Walking / Metro';
+    return '🚂 火车: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁';
   }
-  return '✈ 航班: ' + from.en + ' → ' + to.en + '\n市内: Walking / Metro / Taxi';
+  return '✈ 航班: ' + from.n + ' → ' + to.n + '\n市内交通: 步行 / 地铁 / 出租车';
 }
 
 // ==================== STATE ====================
@@ -301,7 +308,7 @@ function generateItinerary() {
     var stayStartDay = dayNum, stayEndDay = dayNum + nDays - 1;
     var stayStartDate = new Date(start); stayStartDate.setDate(stayStartDate.getDate() + stayStartDay - 1);
     var stayEndDate = new Date(start); stayEndDate.setDate(stayEndDate.getDate() + stayEndDay - 1);
-    var hotelInfo = getHotel(city, level, i) + '\nHotel Add: ' + getHotelAddr(city, city.country);
+    var hotelInfo = getHotel(city, level, i) + '\n地址: ' + getHotelAddr(city, city.country);
 
     var citySpotIdx = 0;
     for (var d = 0; d < nDays; d++) {
