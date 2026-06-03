@@ -341,7 +341,7 @@ function generateItinerary() {
           if (skipHeavy && isHeavySpot(s)) continue;
           result.push(s);
         }
-        if (result.length === 0 && spots.length > 0) result.push('自由探索 ' + city.n + ' 老城区');
+        if (result.length === 0 && spots.length > 0) result.push('Explore / 自由探索 ' + city.n);
         return result.join('\n');
       };
 
@@ -349,14 +349,14 @@ function generateItinerary() {
         // Arrival day: account for immigration + baggage + transit
         touringSpots = takeSpots(1, true);
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
-          touringSpots = '到达日: 入境排队+取行李约60分钟，机场至市区约40分钟\n下午: 酒店周边漫步适应时差';
+          touringSpots = 'Arrival Day / 到达日\n入境+取行李 ~60min / Immigration+bags ~60min\n下午: 酒店周边漫步 / Afternoon: rest near hotel';
         }
         transport = '✈ 国际航班 / Intl Flight: ' + departure + ' → ' + city.en + '\n⚠ 入境+取行李 ~60min · 机场至市区 ~40min\nArrival: immigration+bags ~60min, airport→city ~40min\n下午仅安排酒店周边轻松适应 / Afternoon: rest near hotel';
       } else if (isFirstDay && i > 0) {
         // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
-          touringSpots = '换乘日: 上午退房+火车/航班\n下午: 抵达入住，周边轻松漫步';
+          touringSpots = 'Transfer Day / 换乘日\n上午退房+乘车 / AM: Check-out + transit\n下午: 抵达入住 / PM: Check-in, walk around';
         }
         transport = '⚠ 换乘日: 退房→' + getIntercityTransport(cities[i-1], city) + '→入住新酒店';
       } else if (i === cities.length - 1 && isLastDay) {
