@@ -207,29 +207,23 @@ app.post('/api/admin/generate-codes', (req, res) => {
 app.get('/api/admin/codes', async (req, res) => {
   if (req.query.key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
 
-  const redeemed = await kvGet('stats:redeemed') || 0;
-  const aiUsed = await kvGet('stats:ai_used') || 0;
+  // Aggregate stats from Redis counters
+  const redeemedTotal = Number(await kvGet('stats:redeemed') || 0);
+  const aiUsedTotal = Number(await kvGet('stats:ai_used') || 0);
+
+  // Collect all known codes and check if redeemed
   const recent = [];
-  // Get last 20 redemptions
-  const codes = VALID_CODES.slice(0, 30);
-  for (const c of codes) {
+  const allToCheck = [...VALID_CODES];
+  for (const c of allToCheck) {
     const ts = await kvGet('redeemed:' + c.trim());
     if (ts) recent.push({ code: c.trim(), at: ts });
   }
-  // Also check SCH-/VIP-/FREE- prefixed
-  const allCodes = [...codes];
-  for (const prefix of ['SCH-', 'VIP-', 'FREE-']) {
-    for (let i = 0; i < 20; i++) {
-      const k = prefix + i.toString(16).toUpperCase().padStart(6, '0');
-      const ts = await kvGet('redeemed:' + k);
-      if (ts) recent.push({ code: k, at: ts });
-    }
-  }
 
   res.json({
-    redeemed: Number(redeemed),
-    aiUsed: Number(aiUsed),
-    recent: recent.slice(-20)
+    redeemedTotal,
+    aiUsedTotal,
+    recentRedemptions: recent,
+    validCodesAvailable: VALID_CODES.length
   });
 });
 
