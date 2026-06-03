@@ -358,16 +358,16 @@ function generateItinerary() {
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
           touringSpots = 'Transfer Day / 换乘日\n上午退房+乘车 / AM: Check-out + transit\n下午: 抵达入住 / PM: Check-in, walk around';
         }
-        transport = '⚠ 换乘日: 退房→' + getIntercityTransport(cities[i-1], city) + '→入住新酒店';
+        transport = '⚠ 换乘日 / Transfer: 退房→' + getIntercityTransport(cities[i-1], city) + '→入住新酒店 / Check-in';
       } else if (i === cities.length - 1 && isLastDay) {
         // Departure day: just 1-2 spots
         touringSpots = takeSpots(1);
         transport = (function() {
         var hubs = ['Paris','Frankfurt','Amsterdam','Rome','Milan','Madrid','Barcelona','Munich','Zurich','Vienna','Lisbon','Athens','Brussels','Copenhagen','Stockholm','Helsinki','Oslo','Warsaw','Budapest','Prague','Berlin'];
         if (hubs.indexOf(city.en) >= 0) {
-          return '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
+          return '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure + '\n酒店至机场 / To Airport: Taxi';
         }
-        return '✈ 国际航班: ' + city.en + ' → (经停/转机) → ' + departure + '\n酒店至机场: Taxi / Airport Shuttle';
+        return '✈ 国际航班 / Flight: ' + city.en + ' → (经停/转机 / Layover) → ' + departure + '\n酒店至机场 / To Airport: Taxi';
       })();
       } else {
         // Full sightseeing day: 3-4 spots
