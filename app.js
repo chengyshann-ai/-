@@ -687,10 +687,10 @@ function loadPopular() {
 }
 
 // ==================== DOUBAO REVIEW ====================
-function openDoubao() {
+function openDeepSeekReview() {
   if (!currentItin) { showToast('请先生成行程单'); return; }
   var it = currentItin;
-  var prompt = '请帮我审查以下申根签证行程单是否合理：\n\n';
+  var prompt = '请帮我审查以下申根签证行程单是否合理，指出逻辑漏洞、时间冲突、交通问题：\n\n';
   prompt += '行程: ' + it.route + '\n';
   prompt += '天数: ' + it.days + '天\n';
   prompt += '出发城市: ' + it.departure + '\n';
@@ -701,14 +701,13 @@ function openDoubao() {
     if (r.hotel) prompt += '  住宿: ' + r.hotel.replace(/\n/g, ' | ') + '\n';
     prompt += '  交通: ' + r.transport.replace(/\n/g, ' | ') + '\n';
   }
-  // Copy to clipboard then open Doubao
   navigator.clipboard.writeText(prompt).then(function() {
-    showToast('行程已复制，即将跳转豆包…');
+    showToast('行程已复制，即将跳转DeepSeek…');
     setTimeout(function() {
-      window.open('https://www.doubao.com/chat/', '_blank');
+      window.open('https://chat.deepseek.com/', '_blank');
     }, 800);
   }).catch(function() {
-    window.open('https://www.doubao.com/chat/', '_blank');
+    window.open('https://chat.deepseek.com/', '_blank');
   });
 }
 
