@@ -109,11 +109,17 @@ app.post('/api/generate-itinerary', async (req, res) => {
   const ip = req.headers['x-forwarded-for'] || 'unknown';
   const b = req.body;
   if (!b.cities || !b.days) return res.status(400).json({ error:'缺少参数', fallback:true });
-  // 免费用户限制1次，PRO用户无限
-  const isPro = await kvGet('pro:' + ip);
-  if (!isPro) {
+  // 免费用户1次，PRO用户每次消耗1次
+  const remaining = await kvGet('pro:' + ip);
+  const proCount = Number(remaining) || 0;
+
+  if (proCount > 0) {
+    // PRO用户：消耗1次
+    await kvSet('pro:' + ip, String(proCount - 1));
+  } else {
+    // 免费用户
     const used = await kvIncr('free:' + ip);
-    if (used > 1) return res.status(429).json({ error:'免费次数已用完，请输入兑换码解锁', fallback:true, needRedeem:true });
+    if (used > 1) return res.status(429).json({ error:'次数已用完，请输入兑换码', fallback:true, needRedeem:true });
   }
 
   if (!checkRateLimit(ip)) return res.status(429).json({ error:'今日额度用完(5次/天)', fallback:true });
@@ -166,15 +172,20 @@ app.post('/api/redeem', async (req, res) => {
   if (used) return res.json({ valid: false, message: '该兑换码已被使用' });
 
   await kvSet('code:' + upper, '1');
-  await kvSet('pro:' + ip, '1');
+  await kvSet('pro:' + ip, '3');
   res.json({ valid: true, message: '兑换成功！已解锁PRO版', type: 'lifetime' });
 });
 
 app.get('/api/user/status', async (req, res) => {
   const ip = getIP(req);
-  const pro = await kvGet('pro:' + ip);
-  const used = await kvGet('free:' + ip) || 0;
-  res.json({ pro: !!pro, freeUsed: Number(used), freeLimit: 1 });
+  const remaining = await kvGet('pro:' + ip);
+  const freeUsed = await kvGet('free:' + ip) || 0;
+  res.json({
+    pro: Number(remaining) > 0,
+    remaining: Number(remaining) || 0,
+    freeUsed: Number(freeUsed),
+    freeLimit: 1
+  });
 });
 
 app.post('/api/admin/generate-codes', (req, res) => {
@@ -192,7 +203,7 @@ app.post('/api/admin/generate-codes', (req, res) => {
 
 app.get('/api/admin/codes', (req, res) => {
   if (req.query.key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
-  res.json({ validCodes: VALID_CODES, usedCount: usedCodes.size, used: Array.from(usedCodes) });
+  res.json({ validCodes: VALID_CODES, note: 'Check pro:* keys in Redis for usage stats' });
 });
 
 module.exports = app;

@@ -262,8 +262,7 @@ function generateItinerary() {
   try {
   if (selectedCities.size === 0) { showToast('请至少选择一个城市'); return; }
 
-  // Premium check: server-side via /api/generate-itinerary
-  // (enforced by server returning needRedeem flag)
+  // Premium enforced by server (Redis counter)
 
   var daysEl = document.getElementById('days-input');
   var levelEl = document.getElementById('level-input');
@@ -424,8 +423,8 @@ function generateItinerary() {
     document.getElementById('popular-section').classList.remove('hidden');
     updateLikeUI(); renderPopular();
     window.scrollTo(0,0);
-    var remaining = 1 - parseInt(localStorage.getItem('schengen_gen_count') || '0');
-    showToast('已生成(' + (remaining > 0 ? remaining : 0) + '次剩余)。输入兑换码解锁AI增强');
+    var remaining = 0;
+    showToast('本地规则已生成。输入兑换码解锁AI增强（1码3次）');
     return;
   }
 
@@ -852,7 +851,10 @@ function checkPremium() {
       if (isPremium) {
         var badge = document.getElementById('premium-badge');
         var box = document.getElementById('redeem-box');
-        if (badge) badge.style.display = 'inline-block';
+        if (badge) {
+          badge.style.display = 'inline-block';
+          badge.textContent = '⭐ PRO (' + d.remaining + '次)';
+        }
         if (box) box.style.display = 'none';
       }
     })
