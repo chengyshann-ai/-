@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>申根行程助手 - 产品介绍</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;background:linear-gradient(135deg,#f0f3ff 0%,#e8ecfc 50%,#f8f9fa 100%);display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.card{max-width:800px;width:100%;background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(67,97,238,.12),0 4px 12px rgba(0,0,0,.06);overflow:hidden}
+.header{background:linear-gradient(135deg,#4361ee,#7209b7);padding:40px;text-align:center;color:#fff}
+.header h1{font-size:32px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
+.header p{font-size:14px;opacity:.85;font-weight:400}
+.features{padding:32px 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feature{text-align:center;padding:20px 16px;border-radius:14px;background:#f8f9ff;border:1px solid #e8ecfe}
+.feature .icon{font-size:36px;margin-bottom:10px}
+.feature h3{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.4}
+.feature p{font-size:11px;color:#6c757d;line-height:1.5}
+.badge-row{display:flex;justify-content:center;gap:10px;padding:0 40px 20px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-ai{background:#e8fce8;color:#34c759}
+.badge-pro{background:linear-gradient(135deg,#ff9f1c,#ff6b35);color:#fff}
+.badge-excel{background:#e8f0fe;color:#4361ee}
+.info-section{padding:0 40px 30px}
+.info-block{background:#fafbfc;border-radius:12px;padding:16px 20px;margin-bottom:12px;border:1px solid #e9ecef}
+.info-block h4{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px}
+.info-block p,.info-block li{font-size:12px;color:#6c757d;line-height:1.6}
+.info-block ul{padding-left:16px}
+.info-block li{margin-bottom:2px}
+.alert{background:#fff8f0;border:1px solid #ffd8a8;border-radius:12px;padding:14px 18px;margin:0 40px 24px}
+.alert p{font-size:11px;color:#e67700;line-height:1.6}
+.alert strong{color:#cc6600}
+.footer{padding:16px 40px 24px;text-align:center;font-size:11px;color:#adb5bd}
+@media(max-width:700px){.features{grid-template-columns:1fr;padding:24px}.header{padding:28px}.header h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <h1>🛂 申根行程助手</h1>
+    <p>Schengen Itinerary Generator · AI-Powered · Visa-Ready</p>
+  </div>
+
+  <div style="text-align:center;padding:20px 40px 0">
+    <span class="badge badge-pro">⭐ PRO 千问AI增强</span>
+    <span class="badge badge-excel" style="margin-left:8px">📊 Excel 一键下载</span>
+    <span class="badge badge-ai" style="margin-left:8px">✅ 英文标准格式</span>
+  </div>
+
+  <div class="features">
+    <div class="feature">
+      <div class="icon">📋</div>
+      <h3>一键生成英文行程单</h3>
+      <p>不用给AI指令<br>不用手动翻译英文<br>标准签证格式自动输出</p>
+    </div>
+    <div class="feature">
+      <div class="icon">📊</div>
+      <h3>Excel 标准格式下载</h3>
+      <p>Day / Date / City<br>Touring Spots / Accommodation<br>Transportation 六列标准表</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🧠</div>
+      <h3>千问AI 增强</h3>
+      <p>景点邻近不跨区<br>酒店近景点符合预算<br>航班时间合理·过签更靠谱</p>
+    </div>
+  </div>
+
+  <div class="info-section">
+    <div class="info-block">
+      <h4>📌 使用说明</h4>
+      <ul>
+        <li>需要 🪜 才能打开网站（Vercel 部署）</li>
+        <li>免费版可生成 1 次本地规则行程单（基础版）</li>
+        <li>下单领取兑换码 → 输入兑换 → 解锁 PRO，可得 3 次千问 AI 增强版</li>
+        <li>次数用完后仍可无限次生成本地规则版</li>
+        <li>点击生成后等待 15-30 秒，页面自动更新为 AI 增强版</li>
+      </ul>
+    </div>
+
+    <div class="info-block">
+      <h4>💰 购买说明</h4>
+      <p>因产品特殊（虚拟兑换码），售出后一概不退不换。有问题请联系客服。</p>
+    </div>
+  </div>
+
+  <div class="alert">
+    <p><strong>⚠️ 重要提示：</strong>本工具仅用于辅助生成签证行程单，请根据实际出行计划自行核对机票、酒店等交通住宿信息（尤其是航班号、酒店名要与预订单一致）。<strong>不保过！不保过！</strong>只是给大家省时省力提供个方便。</p>
+  </div>
+
+  <div class="footer">
+    schengen-itinerary-six.vercel.app · AI-Powered · Visa-Ready
+  </div>
+</div>
+</body>
+</html>
