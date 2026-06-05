@@ -84,20 +84,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 .budget-item .amount{font-size:19px;font-weight:800;color:var(--accent)}
 .budget-item .label{font-size:10px;color:var(--text2);margin-top:2px;font-weight:500}
 
-.like-section{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
-.btn-like{background:#fff;border:2px solid var(--border);border-radius:24px;padding:7px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;font-weight:600}
-.btn-like:hover{border-color:var(--red);background:#fff5f5}
-.btn-like.liked{background:#fff0f0;border-color:var(--red);color:var(--red)}
-.like-count{font-size:12px;color:var(--text2)}
-.btn-refresh{background:#fff;border:2px solid var(--border);color:var(--text);padding:7px 16px;border-radius:24px;cursor:pointer;font-size:13px;transition:all .15s;font-family:inherit;display:flex;align-items:center;gap:5px;font-weight:600}
-.btn-refresh:hover{background:var(--bg);border-color:var(--accent)}
-
-.popular-section{margin-top:20px}
-.popular-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;cursor:pointer;font-size:13px;transition:all .12s;background:#fff}
-.popular-item:hover{border-color:var(--accent);background:#f8faff;transform:translateX(3px)}
-.popular-item .pop-rank{font-size:18px;font-weight:800;min-width:26px}
-.popular-item .pop-rank.r1{color:#ff9f1c}.popular-item .pop-rank.r2{color:#adb5bd}.popular-item .pop-rank.r3{color:#cd9777}
-.popular-item .pop-route{flex:1}.popular-item .pop-likes{font-size:11px;color:var(--text2)}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:12px 24px;border-radius:24px;font-size:13px;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.2)}
 .toast.show{opacity:1}
@@ -113,7 +99,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
 @media print{
   body{background:#fff}.app{padding:0;max-width:100%}
   .card{box-shadow:none;border:none;padding:10px 0}
-  #config-section,.sticky-bar,.tabs,.toast,.btn-group,.like-section,.popular-section{display:none!important}
+  #config-section,.sticky-bar,.tabs,.toast,.btn-group,
   .day-block{break-inside:avoid}
 }
 </style>
@@ -132,7 +118,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
           <span id="redeem-msg" style="font-size:10px"></span>
         </div>
       </div>
-        <div id="api-status-badge" style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;margin-top:6px;background:#f0f0f5;color:#86868b">⏳ 检测中...</div><p>29个申根国 · 100+城市 · 签证标准表格 · 一键Excel · 热门排行</p></div>
+        <div id="api-status-badge" style="display:inline-block;padding:3px 12px;border-radius:12px;font-size:11px;font-weight:600;margin-top:6px;background:#f0f0f5;color:#86868b">⏳ 检测中...</div><p>29个申根国 · 100+城市 · 标准英文表格 · 一键Excel · 千问AI增强</p></div>
 
   <div id="config-section">
     <div class="card">
@@ -186,15 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-
     <div id="tab-itinerary"></div>
     <div id="tab-table" class="hidden"></div>
 
-    <div id="like-section" class="like-section hidden">
-      <button class="btn-like" id="like-btn" onclick="toggleLike()">❤️ <span id="like-text">点赞</span></button>
-      <span class="like-count" id="like-count"></span>
-      <button class="btn-refresh" onclick="regenerate()" style="margin-left:auto">🔀 换一换</button>
-    </div>
-    <div id="popular-section" class="popular-section hidden">
-      <div class="card-title" style="margin-bottom:8px">🔥 热门行程（点赞越多越靠前，点击加载）</div>
-      <div id="popular-list"></div>
-    </div>
+
   </div>
 </div>
 

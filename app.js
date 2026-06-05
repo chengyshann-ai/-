@@ -197,14 +197,8 @@ function getIntercityTransport(from, to) {
 // ==================== STATE ====================
 var selectedCities = new Set();
 var currentItin = null, currentItinId = null;
-var currentLang = 'zh', isLiked = false;
-var likeData = {}, recipeReg = {};
+var currentLang = 'zh';
 var toastTimer = null;
-
-function loadLikes() { try { var d=localStorage.getItem('schengen_l3'); if(d) likeData=JSON.parse(d); } catch(e){} }
-function saveLikes() { try { localStorage.setItem('schengen_l3',JSON.stringify(likeData)); } catch(e){} }
-function loadRecipes() { try { var d=localStorage.getItem('schengen_r3'); if(d) recipeReg=JSON.parse(d); } catch(e){} }
-loadLikes(); loadRecipes();
 
 // ==================== CITY SELECTION ====================
 function toggleCity(city) {
@@ -407,8 +401,7 @@ function generateItinerary() {
     routeEn:cities.map(function(c){ return c.en; }).join(' → '),
     rows:rows, budget:b, level:level, departure:departure, startDate:startDate };
 
-  saveRecipe(currentItin);
-
+  
   // Render immediately with local data
   renderItinerary(); renderTable();
   document.getElementById('config-section').classList.add('hidden');
@@ -431,9 +424,7 @@ function generateItinerary() {
   // Skip AI enhancement for free users
   if (!isPremium) {
     renderItinerary(); renderTable();
-    document.getElementById('like-section').classList.remove('hidden');
-    document.getElementById('popular-section').classList.remove('hidden');
-    updateLikeUI(); renderPopular();
+
     window.scrollTo(0,0);
     var remaining = 0;
     showToast('本地规则已生成。输入兑换码解锁AI增强（1码3次）');
@@ -479,8 +470,7 @@ function generateItinerary() {
       window._aiReady = true;
       currentItin = enhanced;
       currentItinId = 'ai_' + Date.now();
-      saveRecipe(currentItin);
-      renderItinerary(); renderTable();
+            renderItinerary(); renderTable();
       var h = document.getElementById('ai-hint');
       if (h) { h.style.background = '#e8fce8'; h.style.color = '#34c759'; h.style.borderColor = '#b8e6b8'; h.innerHTML = '🧠 千问AI增强版 ✅ | <a href="#" onclick="showLocal()" style="color:#4361ee">切换本地版</a>'; }
       showToast('✨ 千问AI增强完成！');
@@ -640,77 +630,6 @@ function copyTable() {
 }
 
 // ==================== LIKE SYSTEM ====================
-function toggleLike() {
-  if (!currentItinId) return;
-  isLiked = !isLiked;
-  likeData[currentItinId] = isLiked ? (likeData[currentItinId]||0)+1 : Math.max(0,(likeData[currentItinId]||0)-1);
-  saveLikes(); updateLikeUI(); renderPopular();
-}
-
-function updateLikeUI() {
-  var btn = document.getElementById('like-btn'), text = document.getElementById('like-text'), count = document.getElementById('like-count');
-  var cnt = likeData[currentItinId]||0;
-  if (isLiked) { btn.classList.add('liked'); text.textContent = '已点赞'; }
-  else { btn.classList.remove('liked'); text.textContent = '点赞'; }
-  count.textContent = cnt > 0 ? cnt + ' 人点赞' : '';
-}
-
-function saveRecipe(it) {
-  var key = it.cities.map(function(c){ return c.n; }).join('|');
-  recipeReg[key] = { cities:it.cities.map(function(c){ return c.n; }), days:it.days, level:it.level };
-  try { localStorage.setItem('schengen_r3',JSON.stringify(recipeReg)); } catch(e){}
-}
-
-function regenerate() {
-  showToast('正在为你生成新行程...');
-  var daysInput = document.getElementById('days-input');
-  var dayOptions = [7,10,12,14,18,21,30];
-  var curDays = parseInt(daysInput.value);
-  var otherDays = dayOptions.filter(function(d){ return d!==curDays; });
-  if (otherDays.length>0) daysInput.value = otherDays[Math.floor(Math.random()*otherDays.length)];
-
-  // Prefer popular recipes
-  var recipeKeys = Object.keys(recipeReg);
-  if (recipeKeys.length > 0 && Math.random() < 0.5) {
-    var pick = recipeKeys[Math.floor(Math.random()*Math.min(5,recipeKeys.length))];
-    var recipe = recipeReg[pick];
-    if (recipe && recipe.cities) {
-      selectedCities.clear();
-      recipe.cities.forEach(function(c){ selectedCities.add(c); });
-      updateCityPanel(); updateSelectedDisplay();
-    }
-  }
-  generateItinerary();
-}
-
-function renderPopular() {
-  var list = document.getElementById('popular-list');
-  var popular = Object.entries(likeData).filter(function(e){ return e[1]>0; }).sort(function(a,b){ return b[1]-a[1]; }).slice(0,8);
-  if (popular.length===0) {
-    list.innerHTML = '<div style="font-size:12px;color:var(--text-secondary);padding:8px">还没有热门行程，快来点赞第一个吧！高赞行程会被"换一换"优先推荐 🎉</div>';
-    return;
-  }
-  var rc = ['r1','r2','r3','','','','',''], html = '';
-  for (var i=0;i<popular.length;i++) {
-    html += '<div class="popular-item" onclick="loadPopular()"><span class="pop-rank '+(rc[i]||'')+'">'+(i+1)+'</span>';
-    html += '<span class="pop-route">行程 #'+popular[i][0].slice(-6)+' — '+popular[i][1]+' 赞</span>';
-    html += '<span class="pop-likes">❤️ '+popular[i][1]+'</span></div>';
-  }
-  list.innerHTML = html;
-}
-
-function loadPopular() {
-  var recipeKeys = Object.keys(recipeReg);
-  if (recipeKeys.length > 0) {
-    var recipe = recipeReg[recipeKeys[Math.floor(Math.random()*Math.min(5,recipeKeys.length))]];
-    if (recipe && recipe.cities) {
-      selectedCities.clear();
-      recipe.cities.forEach(function(c){ selectedCities.add(c); });
-      updateCityPanel(); updateSelectedDisplay();
-    }
-  }
-  generateItinerary();
-}
 
 // ==================== DOUBAO REVIEW ====================
 function openDeepSeekReview() {
