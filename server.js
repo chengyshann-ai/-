@@ -73,10 +73,10 @@ function buildPrompt(b) {
   p += '3. 同城市多天景点不重复；周一闭馆的不安排；换乘日最多1个景点；到达日不安排需门票景点\n\n';
   p += '【交通】\n';
   p += '格式示例:\n';
-  p += '  到达日: "✈ 国际航班：上海 → 巴黎\\n⚠ 入境+取行李约60分钟，机场至市区约40分钟\\n下午酒店周边适应，无需门票"\n';
+  p += '  到达日: "✈ 国际航班（航班号：______）\\n出发地 → 目的地\\n⚠ 入境+取行李约60分钟·机场至市区约40分钟\\n下午酒店周边适应，无需门票"\n';
   p += '  游览日: "步行+地铁" 或 "步行+公交" 或 "步行+水上巴士(Vaporetto)"(仅威尼斯)\n';
   p += '  换乘日: "火车：米兰 → 威尼斯\\n抵达后入住，下午周边漫步"\n';
-  p += '  离开日: "✈ 国际航班：罗马 → 上海\\n酒店至机场：出租车"\n\n';
+  p += '  离开日: "✈ 国际航班（航班号：______）\\n目的地 → 出发地\\n酒店至机场：出租车/机场快线"\n\n';
   p += '【住宿】格式: "X晚\\n酒店品牌\\n地址: 街道, 城市"\n\n';
   p += '【禁止】不加距离数字、不加攻略提示、不加"周一闭馆"等括号说明';
   if (b.localItinerary && b.localItinerary.days) {
@@ -88,7 +88,7 @@ function buildPrompt(b) {
 // ===== Qwen =====
 function callQwen(prompt, cb) {
   if (!QWEN_API_KEY) return cb(null, null);
-  const body = JSON.stringify({ model:'qwen-plus', messages:[{role:'user',content:prompt}], temperature:0.7, max_tokens:4000 });
+  const body = JSON.stringify({ model:'qwen-plus', messages:[{role:'user',content:prompt}], temperature:0.85, max_tokens:4000 });
   https.request({
     hostname:'dashscope.aliyuncs.com', port:443, path:'/compatible-mode/v1/chat/completions', method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+QWEN_API_KEY}, timeout:30000
