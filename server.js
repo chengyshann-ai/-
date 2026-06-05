@@ -149,8 +149,14 @@ app.post('/api/generate-itinerary', async (req, res) => {
   const hit = cached(key);
   if (hit) return res.json({ ...hit, source:'cache' });
 
+  console.log('[Qwen] Calling API for ' + b.cities?.length + ' cities, ' + b.days + ' days');
   callQwen(buildPrompt(b), (err, result) => {
-    if (err || !result) return res.json({ error:err?.message||'AI unavailable', fallback:true });
+    if (err || !result) {
+      console.log('[Qwen] FAILED: ' + (err?.message || 'no result'));
+      return res.json({ error:err?.message||'AI unavailable', fallback:true });
+    }
+    console.log('[Qwen] SUCCESS — response length: ' + result.length + ' chars');
+    console.log('[Qwen] First 200 chars: ' + result.substring(0, 200));
     let json = result.trim();
     if (json.startsWith('```')) json = json.replace(/^```[a-z]*\n?/,'').replace(/\n?```$/,'');
     try { const p=JSON.parse(json); setc(key,p); res.json({...p, source:'qwen'}); }
