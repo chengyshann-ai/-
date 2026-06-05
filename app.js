@@ -395,7 +395,6 @@ function generateItinerary() {
 
   var routeKey = cities.map(function(c){ return c.n; }).join('-')+'|'+days+'|'+level;
   currentItinId = 'itin_'+simpleHash(routeKey);
-  isLiked = !!likeData[currentItinId];
 
   currentItin = { days:days, cities:cities, route:cities.map(function(c){ return c.n; }).join(' → '),
     routeEn:cities.map(function(c){ return c.en; }).join(' → '),
