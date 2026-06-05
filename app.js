@@ -323,23 +323,27 @@ function generateItinerary() {
       };
       // Take next N unused spots, optionally skip heavy attractions
       // Shuffle spots for variety (same parameters → different results)
-      var shuffledSpots = spots.slice();
-      for (var si = shuffledSpots.length - 1; si > 0; si--) {
-        var sj = Math.floor(Math.random() * (si + 1));
-        var tmp = shuffledSpots[si]; shuffledSpots[si] = shuffledSpots[sj]; shuffledSpots[sj] = tmp;
-      }
-      var shuffledIdx = 0;
+      var usedSpots = {};
       var takeSpots = function(n, skipHeavy) {
         var result = [];
-        var tried = 0;
-        while (result.length < n && shuffledIdx < shuffledSpots.length && tried < shuffledSpots.length) {
-          var s = shuffledSpots[shuffledIdx];
-          shuffledIdx++;
-          tried++;
+        for (var attempt = 0; attempt < spots.length && result.length < n; attempt++) {
+          var idx = Math.floor(Math.random() * spots.length);
+          var s = spots[idx];
+          if (usedSpots[s]) continue;
           if (skipHeavy && isHeavySpot(s)) continue;
+          usedSpots[s] = true;
           result.push(s);
         }
-        if (result.length === 0 && shuffledSpots.length > 0) result.push(city.n + ' 市区观光 / City Sightseeing');
+        if (result.length < n) {
+          for (var k = 0; k < spots.length && result.length < n; k++) {
+            var s2 = spots[k];
+            if (usedSpots[s2]) continue;
+            if (skipHeavy && isHeavySpot(s2)) continue;
+            usedSpots[s2] = true;
+            result.push(s2);
+          }
+        }
+        if (result.length === 0 && spots.length > 0) result.push(city.n + ' 市区观光 / City Sightseeing');
         return result.join('\n');
       };
 
