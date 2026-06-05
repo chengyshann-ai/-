@@ -462,6 +462,7 @@ function generateItinerary() {
   tryEnhanceWithAI(localItinCopy, function(enhanced) {
     if (enhanced) {
       enhanced.source = 'qwen';
+      enhanced._aiEnhanced = true;
       window._aiItin = enhanced;
       window._aiReady = true;
       currentItin = enhanced;
@@ -494,7 +495,9 @@ function renderItinerary() {
   if (!currentItin) return;
   var it = currentItin;
   var html = '<div class="itinerary-header"><div><h2>'+(currentLang==='en' && it.routeEn ? it.routeEn : it.route);
-  if (it.source === 'qwen') {
+  if (it._aiEnhanced || it.source === 'qwen') {
+    html += ' <span style="display:inline-block;background:linear-gradient(135deg,#4361ee,#7209b7);color:#fff;font-size:12px;padding:4px 12px;border-radius:12px;margin-left:10px;font-weight:700;vertical-align:middle">✨ 千问AI增强</span>';
+  } else if (it.source === 'qwen') {
     html += ' <span style="display:inline-block;background:#e8fce8;color:#34c759;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">'+T('ai_badge_qwen')+'</span>';
   } else if (it.source === 'local') {
     html += ' <span style="display:inline-block;background:#f0f0f5;color:#86868b;font-size:11px;padding:3px 10px;border-radius:10px;margin-left:8px;font-weight:600;vertical-align:middle">'+T('ai_badge_local')+'</span>';
