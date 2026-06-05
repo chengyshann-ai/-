@@ -65,21 +65,39 @@ function setc(k, r) { cache.set(k, { r, t: Date.now() }); }
 // ===== Prompt =====
 function buildPrompt(b) {
   const lm = { budget:'经济型', mid:'舒适型', luxury:'豪华型' };
-  const bh = { budget:'经济连锁(Ibis/Motel One)', mid:'四星级(NH/Mercure/Holiday Inn)', luxury:'五星级(Hilton/Marriott)' };
-  let p = '你是申根签证行程规划师。输出纯JSON，不要任何解释、不要Markdown、不要攻略建议。\n\n';
-  p += '参数: ' + b.days + '天 ' + (lm[b.level]||b.level) + ' ' + b.departure + '→' + (b.cities||[]).join('→') + ' ' + b.startDate + '\n\n';
-  p += '【输出规则·极简】\n';
-  p += '1. touringSpots: 每天2-3个景点名即可，格式"景点中文 / English Name"，不要加距离、不要加闭馆说明、不要加任何括号注释\n';
-  p += '2. accommodation: 格式"X晚\n酒店品牌\n地址: 街道门牌, 城市"，不要加其他说明\n';
-  p += '3. transportation: 只写交通方式名，如"步行+地铁""火车+步行""飞机+出租车"，不要加距离、时间、解释\n';
-  p += '4. 同城市连续多天，每天景点必须不同，严禁重复\n';
-  p += '5. 注意周一闭馆、周日缩短营业，闭馆日不安排该景点\n';
-  p += '6. 换乘日只安排1个景点，到达日不安排需要门票的景点\n';
-  p += '7. 威尼斯交通写Vaporetto不写Metro\n';
+  let p = '你是欧洲旅行专家，熟悉小红书热门推荐、Google Maps高分景点、当地特色市场和街区。\n';
+  p += '输出纯JSON，禁止任何解释、禁止Markdown、禁止攻略文字。\n\n';
+  p += '参数: ' + b.days + '天 ' + (lm[b.level]||'') + ' ' + b.departure + '→' + (b.cities||[]).join('→') + ' ' + b.startDate + '\n\n';
+  p += '【景点规则】\n';
+  p += '1. 每天2-3个景点，经典打卡+隐藏宝藏结合。除了必去地标，还要加入:\n';
+  p += '   - 小红书热门推荐的小众打卡点\n';
+  p += '   - Google Maps 4.5分以上的本地餐馆/咖啡馆\n';
+  p += '   - 步行可达的公园、公共市场(如Mercato Centrale)、美食街\n';
+  p += '   - 拍照好看的街区、河边步道、日落观景点\n';
+  p += '2. 景点格式: "景点中文 / English Name"，不加任何括号、距离、说明\n';
+  p += '3. 同城市多天，每天景点严禁重复\n';
+  p += '4. 周一闭馆的不安排；换乘日最多1个景点；到达日不安排需门票景点\n\n';
+  p += '【交通规则·极简】\n';
+  p += '格式必须严格为以下之一，不多写一个字:\n';
+  p += '  - 步行\n';
+  p += '  - 步行+地铁\n';
+  p += '  - 步行+公交\n';
+  p += '  - 火车: 出发城市 → 到达城市\n';
+  p += '  - 飞机: 出发城市 → 到达城市\n';
+  p += '  - 步行+水上巴士(Vaporetto)  ← 仅威尼斯\n';
+  p += '  - 飞机+出租车\n';
+  p += '禁止写距离、时间、解释、换乘说明、机场快线等任何额外文字\n\n';
+  p += '【住宿规则】\n';
+  p += '格式: "X晚\n酒店品牌\n地址: 街道, 城市"，不加任何其他文字\n';
+  p += '酒店位置: 靠近市中心或主要景点区\n\n';
+  p += '【禁止出现的内容】\n';
+  p += '1. 禁止"酒店周边漫游""酒店周边漫步""自由探索"等无意义填充\n';
+  p += '2. 禁止任何形式的攻略建议、温馨提示、注意事项\n';
+  p += '3. 禁止在景点名后加括号说明(如"外观""内部""周一闭馆"等)\n';
   if (b.localItinerary && b.localItinerary.days) {
-    p += '\n参考行程(审查并修正不合理之处):\n' + JSON.stringify(b.localItinerary) + '\n';
+    p += '\n参考行程(必须实质改进，丰富景点):\n' + JSON.stringify(b.localItinerary) + '\n';
   }
-  p += '\n返回纯JSON:{"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}';
+  p += '\n返回纯JSON:{"route":"城市1→城市2","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"X晚\\n酒店\\n地址","transportation":"步行+地铁"}]}';
   return p;
 }
 // ===== Qwen =====

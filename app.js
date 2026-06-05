@@ -333,22 +333,22 @@ function generateItinerary() {
           if (skipHeavy && isHeavySpot(s)) continue;
           result.push(s);
         }
-        if (result.length === 0 && spots.length > 0) result.push('Explore / 自由探索 ' + city.n);
+        if (result.length === 0 && spots.length > 0) result.push(city.n + ' 市区观光 / City Sightseeing');
         return result.join('\n');
       };
 
       if (i === 0 && isFirstDay) {
         // Arrival day: account for immigration + baggage + transit
         touringSpots = takeSpots(1, true);
-        if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
-          touringSpots = 'Arrival Day / 到达日\n入境+取行李 ~60min / Immigration+bags ~60min\n下午: 酒店周边漫步 / Afternoon: rest near hotel';
+        if (!touringSpots || touringSpots.indexOf('市区观光') >= 0) {
+          touringSpots = city.n + ' 抵达入住 / Arrival & Check-in';
         }
         transport = '✈ 国际航班 / Flight: ' + departure + ' → ' + city.en + '\n机场至市区: 出租车/机场快线';
       } else if (isFirstDay && i > 0) {
         // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
-        if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
-          touringSpots = 'Transfer Day / 换乘日\n上午退房+乘车 / AM: Check-out + transit\n下午: 抵达入住 / PM: Check-in, walk around';
+        if (!touringSpots || touringSpots.indexOf('市区观光') >= 0) {
+          touringSpots = city.n + ' 换乘抵达 / Transfer & Arrival';
         }
         transport = getIntercityTransport(cities[i-1], city);
       } else if (i === cities.length - 1 && isLastDay) {
@@ -693,11 +693,6 @@ function forceEnglishText(text) {
   t = t.replace(/退房/g, 'Check-out').replace(/入住新酒店/g, 'Check-in to Hotel');
   t = t.replace(/入住/g, 'Check-in');
   t = t.replace(/换乘日/g, 'Transfer Day').replace(/到达日/g, 'Arrival Day');
-  t = t.replace(/下午仅安排酒店周边轻松适应/g, 'PM: Light walk near hotel for acclimatization');
-  t = t.replace(/酒店周边轻松适应/g, 'Light walk near hotel');
-  t = t.replace(/周边轻松漫步/g, 'Neighborhood walk');
-  t = t.replace(/周边漫步/g, 'Neighborhood walk');
-  t = t.replace(/轻松适应/g, 'Acclimatization').replace(/适应时差/g, 'Adjust to timezone');
   t = t.replace(/下午/g, 'PM').replace(/上午/g, 'AM').replace(/傍晚/g, 'Evening');
   t = t.replace(/约/g, '~').replace(/分钟/g, 'min').replace(/小时/g, 'hr');
 
