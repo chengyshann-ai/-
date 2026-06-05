@@ -405,8 +405,6 @@ function generateItinerary() {
   renderItinerary(); renderTable();
   document.getElementById('config-section').classList.add('hidden');
   document.getElementById('result-section').classList.remove('hidden');
-  document.getElementById('like-section').classList.remove('hidden');
-  document.getElementById('popular-section').classList.remove('hidden');
   switchTab('itinerary', document.querySelector('.tab-btn[data-tab="itinerary"]'));
   updateLikeUI(); renderPopular();
   window.scrollTo(0,0);
