@@ -406,7 +406,6 @@ function generateItinerary() {
   document.getElementById('config-section').classList.add('hidden');
   document.getElementById('result-section').classList.remove('hidden');
   switchTab('itinerary', document.querySelector('.tab-btn[data-tab="itinerary"]'));
-  updateLikeUI(); renderPopular();
   window.scrollTo(0,0);
   // Show source: check API status and display badge
   fetch('/api/status').then(function(r){return r.json()}).then(function(d){
@@ -765,10 +764,6 @@ var T = function(key) {
     'table_tab': {zh:'📊 标准表格',en:'📊 Table'},
     'generate_btn': {zh:'✨ 生成行程单',en:'✨ Generate'},
     'reset_btn': {zh:'重置',en:'Reset'},
-    'like_btn': {zh:'点赞',en:'Like'},
-    'liked_btn': {zh:'已点赞',en:'Liked'},
-    'regenerate_btn': {zh:'🔀 换一换',en:'🔀 New'},
-    'popular_title': {zh:'🔥 热门行程',en:'🔥 Popular'},
     'select_cities': {zh:'个城市已选',en:' cities'},
     'not_selected': {zh:'未选择',en:'None'},
   };
