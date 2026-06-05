@@ -642,15 +642,8 @@ function openDeepSeekReview() {
     if (r.hotel) prompt += '  住宿: ' + r.hotel.replace(/\n/g, ' | ') + '\n';
     prompt += '  交通: ' + r.transport.replace(/\n/g, ' | ') + '\n';
   }
-  navigator.clipboard.writeText(prompt).then(function() {
-    showToast('行程已复制，点击确定跳转DeepSeek');
-    setTimeout(function() {
-      var w = window.open('https://chat.deepseek.com/', '_blank');
-      if (!w) { window.location.href = 'https://chat.deepseek.com/'; }
-    }, 500);
-  }).catch(function() {
-    window.location.href = 'https://chat.deepseek.com/';
-  });
+  try { navigator.clipboard.writeText(prompt); showToast('行程已复制，正在打开DeepSeek...'); } catch(e) {}
+  window.open('https://chat.deepseek.com/', '_blank');
 }
 
 
