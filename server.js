@@ -64,52 +64,24 @@ function setc(k, r) { cache.set(k, { r, t: Date.now() }); }
 
 // ===== Prompt =====
 function buildPrompt(b) {
-  const lm = { budget:'经济型(住宿350元/晚)', mid:'舒适型(住宿750元/晚)', luxury:'豪华型(住宿1800元/晚)' };
-  const budgetHotel = { budget:'经济连锁酒店如Ibis、Motel One或评价好的民宿', mid:'四星级酒店如NH Collection、Mercure、Holiday Inn', luxury:'五星级如Hilton、Marriott、Kempinski' };
-  let p = '你是欧洲申根签证专业行程规划师。必须返回合法JSON，不要Markdown。\n\n';
-  p += '【参数】\n';
-  p += '- 天数:' + b.days + '天\n- 预算:' + (lm[b.level]||b.level) + '\n';
-  p += '- 路线:' + b.departure + ' → ' + (b.cities||[]).join(' → ') + '\n- 出发日期:' + b.startDate + '\n\n';
-  p += '【景点规则·签证官视角】\n';
-  p += '1. 合理性第一: 半天≤2个景点，全天≤3个，考虑排队+游览+交通时间\n';
-  p += '2. 邻近原则: 同一天景点必须步行可达或同一片区\n';
-  p += '3. 闭馆检查: 标注周几闭馆(如"⚠ 周一闭馆")，避免安排闭馆日参观\n';
-  p += '4. 换乘日: 只安排1个轻松景点，不计入全天游览\n';
-  p += '5. 到达日: 不安排需要门票的景点\n';
-  p += '6. 威尼斯: 交通写Vaporetto，禁写Metro\n\n';
-  p += '【酒店规则】\n';
-  p += '1. 酒店品牌:' + (budgetHotel[b.level]||'舒适型酒店') + '\n';
-  p += '2. 酒店位置: 必须靠近当天最后一个景点，步行不超过15分钟或地铁2站内\n';
-  p += '3. 地址格式: 真实街道名+门牌号+邮编+城市，如"Via Roma 37, 20123 Milan, Italy"\n\n';
-  p += '【交通规则】\n';
-  p += '1. 禁止写具体航班号: 只写"国际航班(出发城市→目的地)"或"Flight(Dep→Arr)"，不写CA749等具体号\n';
-  p += '2. 跨城火车写车站名，如"Train: Milano Centrale→Venezia Mestre"\n';
-  p += '3. 非枢纽城市(如Nice/Naples/Dubrovnik)返程标注"需经停/转机"\n';
-  p += '\n【到达日规则·极其重要】\n';
-  p += '1. 国际到达当天必须考虑: 入境排队30-60分钟、取行李20分钟、机场到市区30-90分钟\n';
-  p += '2. 到达日下午实际可用时间仅2-3小时，最多安排1个轻松景点（酒店附近漫步即可）\n';
-  p += '3. 到达日不要安排需要门票的景点（下午太晚可能已关门）\n';
-  p += '4. 到达日住宿说明写"抵达入住，周边适应"\n';
+  const lm = { budget:'经济型', mid:'舒适型', luxury:'豪华型' };
+  const bh = { budget:'经济连锁(Ibis/Motel One)', mid:'四星级(NH/Mercure/Holiday Inn)', luxury:'五星级(Hilton/Marriott)' };
+  let p = '你是申根签证行程规划师。输出纯JSON，不要任何解释、不要Markdown、不要攻略建议。\n\n';
+  p += '参数: ' + b.days + '天 ' + (lm[b.level]||b.level) + ' ' + b.departure + '→' + (b.cities||[]).join('→') + ' ' + b.startDate + '\n\n';
+  p += '【输出规则·极简】\n';
+  p += '1. touringSpots: 每天2-3个景点名即可，格式"景点中文 / English Name"，不要加距离、不要加闭馆说明、不要加任何括号注释\n';
+  p += '2. accommodation: 格式"X晚\n酒店品牌\n地址: 街道门牌, 城市"，不要加其他说明\n';
+  p += '3. transportation: 只写交通方式名，如"步行+地铁""火车+步行""飞机+出租车"，不要加距离、时间、解释\n';
+  p += '4. 同城市连续多天，每天景点必须不同，严禁重复\n';
+  p += '5. 注意周一闭馆、周日缩短营业，闭馆日不安排该景点\n';
+  p += '6. 换乘日只安排1个景点，到达日不安排需要门票的景点\n';
+  p += '7. 威尼斯交通写Vaporetto不写Metro\n';
   if (b.localItinerary && b.localItinerary.days) {
-    p += '\n【基础行程(必须审查并修正不合理之处)】\n' + JSON.stringify(b.localItinerary) + '\n';
-    p += '\n你是签证官视角的行程审查专家。请逐天检查并修正:\n';
-    p += '【合理性优先·宁可少不可滥】\n';
-    p += '1. 每天景点数必须合理: 考虑开门时间+排队+游览+交通，半天最多2个、全天最多3个大型景点\n';
-    p += '2. 同一天的景点必须地理位置相邻(步行15分钟内或同一片区)，严禁跨区跑\n';
-    p += '3. 必须检查周几: 欧洲许多博物馆周一闭馆、部分周日缩短营业，标注"⚠ 周一闭馆"等提醒\n';
-    p += '4. 换乘日只安排到达城市1个轻松景点，不计入全天游览\n';
-    p += '5. 到达日不安排需要门票的景点(可能已关门)\n';
-    p += '6. touringSpots保持原样双语格式不变\n';
-    p += '7. accommodation写详细: "X晚\n酒店品牌·名称\n地址: 真实地址"\n';
-    p += '8. transportation写具体: 机场到市区交通方式+预计时间\n';
-  } else {
-    p += '\n从零规划行程。遵循上述所有合理性原则。\n';
+    p += '\n参考行程(审查并修正不合理之处):\n' + JSON.stringify(b.localItinerary) + '\n';
   }
-  p += '\n返回格式:{"route":"城市1→城市2","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市名","touringSpots":["景点1 / Attraction1"],"accommodation":"住宿中英双语","transportation":"交通中英双语"}]}\n';
-  p += 'touringSpots保持原样不要重复翻译。accommodation和transportation用中文。只返回JSON。';
+  p += '\n返回纯JSON:{"route":"...","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市,国家","touringSpots":["景点"],"accommodation":"住宿","transportation":"交通"}]}';
   return p;
 }
-
 // ===== Qwen =====
 function callQwen(prompt, cb) {
   if (!QWEN_API_KEY) return cb(null, null);

@@ -319,10 +319,8 @@ function generateItinerary() {
       // City-specific transport — Venice has no metro, only water transport
       var getLocalTransport = function(cityObj) {
         if (cityObj.n === '威尼斯' || cityObj.en === 'Venice')
-          return '步行·水上巴士 / Walking·Vaporetto';
-        if (cityObj.en === 'Amsterdam' || cityObj.en === 'Rotterdam')
-          return '步行·电车·地铁 / Walking·Tram·Metro';
-        return '步行·地铁 / Walking·Metro';
+          return '步行+水上巴士 / Walking+Vaporetto';
+        return '步行+地铁 / Walking+Metro';
       };
       // Take next N unused spots, optionally skip heavy attractions
       var takeSpots = function(n, skipHeavy) {
@@ -345,24 +343,23 @@ function generateItinerary() {
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
           touringSpots = 'Arrival Day / 到达日\n入境+取行李 ~60min / Immigration+bags ~60min\n下午: 酒店周边漫步 / Afternoon: rest near hotel';
         }
-        transport = '✈ 国际航班 / Intl Flight: ' + departure + ' → ' + city.en + '\n⚠ 入境+取行李 ~60min · 机场至市区 ~40min\nArrival: immigration+bags ~60min, airport→city ~40min\n下午仅安排酒店周边轻松适应 / Afternoon: rest near hotel';
+        transport = '✈ 国际航班 / Flight: ' + departure + ' → ' + city.en + '\n机场至市区: 出租车/机场快线';
       } else if (isFirstDay && i > 0) {
         // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
         if (!touringSpots || touringSpots.indexOf('自由探索') >= 0) {
           touringSpots = 'Transfer Day / 换乘日\n上午退房+乘车 / AM: Check-out + transit\n下午: 抵达入住 / PM: Check-in, walk around';
         }
-        transport = '⚠ 换乘日 / Transfer: 退房→' + getIntercityTransport(cities[i-1], city) + '→入住新酒店 / Check-in';
+        transport = getIntercityTransport(cities[i-1], city);
       } else if (i === cities.length - 1 && isLastDay) {
         // Departure day: just 1-2 spots
         touringSpots = takeSpots(1);
-        transport = (function() {
         var hubs = ['Paris','Frankfurt','Amsterdam','Rome','Milan','Madrid','Barcelona','Munich','Zurich','Vienna','Lisbon','Athens','Brussels','Copenhagen','Stockholm','Helsinki','Oslo','Warsaw','Budapest','Prague','Berlin'];
         if (hubs.indexOf(city.en) >= 0) {
-          return '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure + '\n酒店至机场 / To Airport: Taxi';
+          transport = '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure;
+        } else {
+          transport = '✈ 国际航班(经停/转机) / Flight(layover): ' + city.en + ' → ' + departure;
         }
-        return '✈ 国际航班 / Flight: ' + city.en + ' → (经停/转机 / Layover) → ' + departure + '\n酒店至机场 / To Airport: Taxi';
-      })();
       } else {
         // Full sightseeing day: 3-4 spots
         touringSpots = takeSpots(3);
