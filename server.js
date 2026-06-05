@@ -171,7 +171,7 @@ app.post('/api/redeem', async (req, res) => {
 
   const upper = code.toUpperCase().trim();
 
-  if (!VALID_CODES.includes(upper) && !upper.startsWith('SCH-') && !upper.startsWith('VIP-') && !upper.startsWith('FREE-') && !upper.startsWith('TEST-') && !upper.startsWith('NEW-')) {
+  if (!VALID_CODES.includes(upper) && !upper.startsWith('SCH-') && !upper.startsWith('VIP-') && !upper.startsWith('FREE-') && !upper.startsWith('TEST-') && !upper.startsWith('NEW-') && !upper.startsWith('AUTO-')) {
     return res.json({ valid: false, message: '兑换码无效' });
   }
 
@@ -208,6 +208,47 @@ app.post('/api/admin/generate-codes', (req, res) => {
     generated.push(code);
   }
   res.json({ generated, note: '请将以上code添加到Vercel环境变量 REDEEM_CODES 中(逗号分隔)' });
+});
+
+
+// ===== 自动发货：从码池中取一个未使用的兑换码 =====
+app.post('/api/dispense-code', async (req, res) => {
+  const { key } = req.body;
+  if (key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
+
+  // Try to find an unused code from the pool
+  // Codes are stored as 'pool:CODE' in Redis, value = 'available' or 'used'
+  // We scan through pool keys to find an available one
+  for (let attempt = 0; attempt < 50; attempt++) {
+    // Generate a random pool code
+    const prefix = 'AUTO';
+    const suffix = require('crypto').randomBytes(3).toString('hex').toUpperCase();
+    const code = prefix + '-' + suffix;
+
+    const existing = await kvGet('code:' + code);
+    if (!existing) {
+      // This code hasn't been used yet — reserve it
+      await kvSet('code:' + code, 'reserved');
+      await kvSet('code:' + code + ':reserved_at', new Date().toISOString());
+      return res.json({ code, message: '新码已分配，发给用户即可' });
+    }
+  }
+
+  res.status(500).json({ error: '生成失败，请重试' });
+});
+
+// 查看剩余可用码数量
+app.get('/api/dispense-status', async (req, res) => {
+  if (req.query.key !== ADMIN_KEY) return res.status(403).json({ error: '无权限' });
+
+  const redeemed = await kvGet('stats:redeemed') || 0;
+  const aiUsed = await kvGet('stats:ai_used') || 0;
+
+  res.json({
+    totalRedeemed: Number(redeemed),
+    totalAiUsed: Number(aiUsed),
+    note: 'POST /api/dispense-code 获取新码发给用户'
+  });
 });
 
 app.get('/api/admin/codes', async (req, res) => {
