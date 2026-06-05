@@ -319,8 +319,8 @@ function generateItinerary() {
       // City-specific transport — Venice has no metro, only water transport
       var getLocalTransport = function(cityObj) {
         if (cityObj.n === '威尼斯' || cityObj.en === 'Venice')
-          return '步行+水上巴士 / Walking+Vaporetto';
-        return '步行+地铁 / Walking+Metro';
+          return '步行+水上巴士(Vaporetto)';
+        return '步行+地铁';
       };
       // Take next N unused spots, optionally skip heavy attractions
       var takeSpots = function(n, skipHeavy) {
@@ -341,24 +341,24 @@ function generateItinerary() {
         // Arrival day: account for immigration + baggage + transit
         touringSpots = takeSpots(1, true);
         if (!touringSpots || touringSpots.indexOf('市区观光') >= 0) {
-          touringSpots = city.n + ' 抵达入住 / Arrival & Check-in';
+          touringSpots = '抵达入住，酒店周边适应时差 / Arrival, rest near hotel';
         }
-        transport = '✈ 国际航班 / Flight: ' + departure + ' → ' + city.en + '\n机场至市区: 出租车/机场快线';
+        transport = '✈ 国际航班：' + departure + ' → ' + city.en + '\n⚠ 入境排队+取行李约60分钟，机场至市区约40分钟\n下午仅安排酒店周边轻松适应，无需门票';
       } else if (isFirstDay && i > 0) {
         // Travel day: account for check-out, transit, check-in
         touringSpots = takeSpots(1, true);
         if (!touringSpots || touringSpots.indexOf('市区观光') >= 0) {
-          touringSpots = city.n + ' 换乘抵达 / Transfer & Arrival';
+          touringSpots = '换乘日：退房乘车，抵达后入住 / Transfer day: check-out, transit, check-in';
         }
-        transport = getIntercityTransport(cities[i-1], city);
+        transport = getIntercityTransport(cities[i-1], city) + '\n抵达后入住酒店，下午周边轻松漫步';
       } else if (i === cities.length - 1 && isLastDay) {
         // Departure day: just 1-2 spots
         touringSpots = takeSpots(1);
         var hubs = ['Paris','Frankfurt','Amsterdam','Rome','Milan','Madrid','Barcelona','Munich','Zurich','Vienna','Lisbon','Athens','Brussels','Copenhagen','Stockholm','Helsinki','Oslo','Warsaw','Budapest','Prague','Berlin'];
         if (hubs.indexOf(city.en) >= 0) {
-          transport = '✈ 国际航班 / Flight: ' + city.en + ' → ' + departure;
+          transport = '✈ 国际航班：' + city.en + ' → ' + departure + '\n酒店至机场：出租车/机场快线';
         } else {
-          transport = '✈ 国际航班(经停/转机) / Flight(layover): ' + city.en + ' → ' + departure;
+          transport = '✈ 国际航班(经停/转机)：' + city.en + ' → ' + departure + '\n酒店至机场：出租车/机场快线';
         }
       } else {
         // Full sightseeing day: 3-4 spots
