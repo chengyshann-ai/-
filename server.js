@@ -89,7 +89,14 @@ function buildPrompt(b) {
   p += '3. 到达日不要安排需要门票的景点（下午太晚可能已关门）\n';
   p += '4. 到达日住宿说明写"抵达入住，周边适应"\n';
   if (b.localItinerary && b.localItinerary.days) {
-    p += '\n【基础行程(在此基础上优化)】\n' + JSON.stringify(b.localItinerary) + '\n';
+    p += '\n【基础行程(必须优化改进，不要原样返回)】\n' + JSON.stringify(b.localItinerary) + '\n';
+    p += '\n你必须对基础行程做以下改进（不是润色，是实质性改动）:\n';
+    p += '1. 每天景点从2个增加到3-4个，且必须和基础行程里的景点不同（不要重复同样的景点）\n';
+    p += '2. accommodation改为详细描述: "X晚住宿\n酒店品牌+名称\n地址: 真实地址"\n';
+    p += '3. transportation加入具体细节: 机场到市区交通方式、预计时间\n';
+    p += '4. touringSpots保持原样不要重复翻译\n';
+  } else {
+    p += '\n从零规划行程JSON。每天3-4个景点。\n';
   }
   p += '\n返回格式:{"route":"城市1→城市2","days":[{"day":1,"date":"YYYY-MM-DD","city":"城市名","touringSpots":["景点1 / Attraction1"],"accommodation":"住宿中英双语","transportation":"交通中英双语"}]}\n';
   p += 'touringSpots保持原样不要重复翻译。accommodation和transportation用中文。只返回JSON。';
